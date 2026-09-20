@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4f46e5">
+<title>Digital Students</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ---------- Design tokens (theme colors are set from JS) ---------- */
+:root{
+  --bg:#f3f5f9;--surface:#fff;--surface-2:#f7f8fb;--text:#141b2d;--muted:#64708a;--line:#e3e7ef;
+  --brand:#4f46e5;--primary:#4f46e5;--on-primary:#fff;
+  --ok:#0f8f62;--warn:#b86e00;--bad:#d62839;
+  --radius:14px;--radius-sm:10px;--pad:22px;--gap:18px;--row:13px;--fs:1;--sidebar-w:268px;
+  --shadow:0 1px 2px rgba(20,27,45,.04),0 10px 30px rgba(20,27,45,.06);
+  --primary-soft:color-mix(in srgb,var(--primary) 11%,var(--surface));
+  --primary-line:color-mix(in srgb,var(--primary) 32%,var(--line));
+  --mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html[data-mode=dark]{
+  --bg:#0b101c;--surface:#131a2b;--surface-2:#182137;--text:#e7ebf5;--muted:#93a0bb;--line:#26314b;
+  --ok:#34d399;--warn:#fbbf24;--bad:#f87171;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html{font-size:calc(15px * var(--fs));scroll-behavior:smooth}
+body{margin:0;font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button,input,select{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer;padding:0}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+h1{font-size:1.75rem;line-height:1.2;letter-spacing:-.02em;margin:0}
+h2{font-size:1.05rem;margin:0;line-height:1.3}
+p{margin:0;color:var(--muted)}
+.sm{font-size:.82rem;color:var(--muted)}
+svg.i{width:1.2em;height:1.2em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- Sidebar ---------- */
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 14px;z-index:40;transition:width .2s,transform .25s;overflow-y:auto;overflow-x:hidden}
+.brand{display:flex;align-items:center;gap:12px;padding:2px 8px 20px}
+.brand-mark{width:40px;height:40px;border-radius:var(--radius-sm);background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.15rem;flex:none}
+.brand-text b{display:block;font-size:1.02rem;line-height:1.1}
+.brand-text small{color:var(--muted);font-size:.74rem}
+.me{display:flex;align-items:center;gap:11px;padding:10px;border-radius:var(--radius-sm);background:var(--surface-2);border:1px solid var(--line);margin-bottom:8px;text-align:left;width:100%}
+.me b{display:block;font-size:.86rem;line-height:1.25}
+.me small{font-family:var(--mono);font-size:.72rem;color:var(--muted);letter-spacing:.08em}
+.avatar{width:38px;height:38px;border-radius:calc(var(--radius-sm) + 2px);background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:800;font-size:.85rem;overflow:hidden;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.nav-title{font-size:.74rem;color:var(--muted);padding:16px 12px 6px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:var(--radius-sm);color:var(--muted);font-size:.88rem;font-weight:500;text-align:left;position:relative;transition:background .15s,color .15s}
+.nav-item:hover{background:var(--surface-2);color:var(--text)}
+.nav-item.active{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.nav-item.active:before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--primary)}
+.nav-item.danger{color:var(--bad)}
+.nav-item.danger:hover{background:color-mix(in srgb,var(--bad) 10%,var(--surface))}
+.nav-bottom{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.side-scrim{display:none}
+
+/* ---------- Main + topbar ---------- */
+.main{margin-left:var(--sidebar-w);transition:margin .2s;min-width:0}
+.topbar{position:sticky;top:0;z-index:30;height:66px;display:flex;align-items:center;gap:14px;padding:0 28px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.crumb{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);white-space:nowrap}
+.crumb b{color:var(--text);font-size:.95rem}
+.crumb svg{width:14px;height:14px}
+.search-btn{margin-left:auto;display:flex;align-items:center;gap:10px;flex:1;max-width:340px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--muted);font-size:.85rem;text-align:left}
+.search-btn:hover{border-color:var(--primary-line)}
+kbd{margin-left:auto;font:500 .7rem var(--mono);border:1px solid var(--line);border-radius:6px;padding:1px 6px;background:var(--surface)}
+.tb-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{width:40px;height:40px;border-radius:var(--radius-sm);display:grid;place-items:center;color:var(--muted);border:1px solid var(--line);background:var(--surface);position:relative;overflow:hidden}
+.icon-btn:hover{color:var(--text);border-color:var(--primary-line)}
+.icon-btn .avatar{width:100%;height:100%;border-radius:0}
+.badge-dot{position:absolute;top:8px;right:9px;width:9px;height:9px;border-radius:50%;background:var(--bad);border:2px solid var(--surface)}
+.menu-btn{display:none}
+.pop-title{font-weight:700;font-size:.92rem;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.modal hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.menu-link{display:flex;align-items:center;gap:11px;width:100%;padding:9px 10px;border-radius:var(--radius-sm);font-size:.87rem;color:var(--text);text-align:left}
+.menu-link:hover{background:var(--surface-2)}
+.note{display:flex;gap:11px;padding:10px 0;border-top:1px solid var(--line);font-size:.84rem}
+.note:first-of-type,.modal-head+.note{border-top:0}
+.note b{display:block}.note small{color:var(--muted)}
+.note .tl-dot{margin-top:6px}
+
+/* ---------- Content + layout ---------- */
+.content{padding:28px;max-width:1240px;margin:0 auto}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.page-head p{margin-top:6px;max-width:62ch}
+.head-actions{display:flex;gap:10px;flex-wrap:wrap}
+.grid{display:grid;gap:var(--gap)}
+.cols-hero{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.cols-main{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols-profile{grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr);align-items:start}
+.stack{display:grid;gap:var(--gap)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad);box-shadow:var(--shadow)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.panel-head p{font-size:.82rem;margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:.82rem;color:var(--muted)}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--radius-sm);background:var(--primary);color:var(--on-primary);font-weight:700;font-size:.85rem;transition:filter .15s,border-color .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--primary-line);filter:none}
+.btn.soft{background:var(--primary-soft);color:var(--primary)}
+.btn.danger{background:color-mix(in srgb,var(--bad) 12%,var(--surface));color:var(--bad)}
+.btn.sm{height:34px;padding:0 12px;font-size:.8rem}
+
+/* ---------- Student ID card ---------- */
+.idcard{position:relative;overflow:hidden;color:#fff;border-radius:calc(var(--radius) + 6px);padding:24px;min-height:250px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 74%,#000),var(--brand) 60%,color-mix(in srgb,var(--brand) 72%,#fff));box-shadow:0 18px 40px color-mix(in srgb,var(--brand) 32%,transparent)}
+.idcard:before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 112% -12%,transparent 0 14px,rgba(255,255,255,.075) 14px 15px);pointer-events:none}
+.idcard>*{position:relative}
+.id-top{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.9rem;gap:10px}
+.id-top .brand-mark{width:30px;height:30px;font-size:.9rem;background:rgba(255,255,255,.2)}
+.id-logo{display:flex;gap:10px;align-items:center}
+.id-body{display:flex;gap:16px;align-items:center}
+.id-photo{width:76px;height:92px;border-radius:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);display:grid;place-items:center;font-size:1.6rem;font-weight:800;overflow:hidden;flex:none}
+.id-photo img{width:100%;height:100%;object-fit:cover}
+.id-name{font-size:1.35rem;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.id-sub{opacity:.86;font-size:.84rem;margin-top:3px}
+.id-num{font-family:var(--mono);font-size:1.6rem;letter-spacing:.14em;font-weight:500;word-break:break-all}
+.id-label{font-size:.76rem;opacity:.82}
+.id-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.verified{display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.18);border-radius:999px;padding:5px 11px;font-size:.76rem;font-weight:700}
+.verified svg{width:14px;height:14px}
+.id-copy{color:#fff;background:rgba(255,255,255,.18);width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none}
+.id-copy:hover{background:rgba(255,255,255,.3)}
+.id-inline{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px dashed var(--primary-line);background:var(--primary-soft);border-radius:var(--radius-sm)}
+.id-inline .mono{font-size:1.1rem;font-weight:500;color:var(--primary)}
+
+/* ---------- Stats, rows, meters ---------- */
+.stats{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.stat{padding:var(--pad);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat:nth-child(2n){border-right:0}
+.stat:nth-last-child(-n+2){border-bottom:0}
+.stat small{color:var(--muted);font-size:.8rem;display:flex;align-items:center;gap:8px}
+.stat small svg{color:var(--primary)}
+.stat strong{display:block;font-size:1.9rem;letter-spacing:-.02em;margin:6px 0 2px;line-height:1.1}
+.delta{font-size:.8rem;color:var(--ok);font-weight:600}
+.row{display:flex;align-items:center;gap:14px;padding:var(--row) 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row-ico{width:40px;height:40px;border-radius:var(--radius-sm);background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:800;font-size:.85rem;flex:none}
+.row-main{flex:1;min-width:0}
+.row-main b{font-size:.9rem;display:block}
+.row-main small{color:var(--muted);font-size:.8rem}
+.row-end{text-align:right}
+.row-end small{display:block;color:var(--muted);font-size:.78rem}
+.meter{height:7px;background:var(--surface-2);border-radius:9px;overflow:hidden;margin-top:7px;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--primary);border-radius:9px}
+.trend{width:100%;height:auto;display:block}
+.tl-item{display:flex;gap:14px;padding-bottom:18px;position:relative}
+.tl-item:last-child{padding-bottom:0}
+.tl-item:not(:last-child):before{content:"";position:absolute;left:5px;top:18px;bottom:0;width:2px;background:var(--line)}
+.tl-dot{width:12px;height:12px;border-radius:50%;background:var(--primary);margin-top:5px;flex:none;box-shadow:0 0 0 4px var(--primary-soft)}
+.tl-item b{font-size:.88rem;display:block}
+.tl-item small{display:block;color:var(--muted);font-size:.8rem}
+
+/* ---------- Tables, badges ---------- */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th{text-align:left;font-size:.8rem;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:var(--row) 12px;border-bottom:1px solid var(--line);font-size:.87rem}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.76rem;font-weight:700;background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok)}
+.badge.pending{background:color-mix(in srgb,var(--warn) 16%,var(--surface));color:var(--warn)}
+.badge.off{background:var(--surface-2);color:var(--muted)}
+.mono{font-family:var(--mono);letter-spacing:.06em}
+.empty{padding:34px;text-align:center;color:var(--muted)}
+
+/* ---------- Forms ---------- */
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.field .val{padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);font-weight:600;font-size:.9rem;min-height:44px;word-break:break-word}
+.input{width:100%;height:44px;padding:0 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);outline:none}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 20%,transparent)}
+input[type=range]{accent-color:var(--primary);width:170px}
+.sect{font-size:.95rem;margin:22px 0 12px}
+.sect:first-child{margin-top:0}
+.setting{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 0;border-top:1px solid var(--line)}
+.setting:first-of-type{border-top:0}
+.setting b{font-size:.9rem;display:block}
+.setting small{color:var(--muted);font-size:.82rem;display:block}
+.switch{width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.switch:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.switch[aria-checked=true]{background:var(--primary)}
+.switch[aria-checked=true]:after{transform:translateX(18px)}
+.seg{display:inline-flex;padding:4px;border:1px solid var(--line);border-radius:calc(var(--radius-sm) + 4px);background:var(--surface-2);gap:2px;flex-wrap:wrap}
+.seg button{padding:7px 13px;border-radius:var(--radius-sm);font-size:.82rem;font-weight:600;color:var(--muted);display:flex;gap:7px;align-items:center}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.16)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.swatch{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);font-size:.85rem;font-weight:600;text-align:left}
+.swatch:hover{border-color:var(--c)}
+.swatch i{width:26px;height:26px;border-radius:50%;background:var(--c);display:grid;place-items:center;color:#fff;flex:none}
+.swatch i svg,.dot svg{width:14px;height:14px;opacity:0}
+.swatch[aria-pressed=true]{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 24%,transparent)}
+.swatch[aria-pressed=true] i svg,.dot[aria-pressed=true] svg{opacity:1}
+.dots{display:flex;gap:9px;flex-wrap:wrap}
+.dot{width:30px;height:30px;border-radius:50%;background:var(--c);display:grid;place-items:center;color:#fff;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.dot[aria-pressed=true]{box-shadow:0 0 0 2px var(--c)}
+.preview{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.settings{display:grid;grid-template-columns:230px minmax(0,1fr);gap:var(--gap);align-items:start}
+.subnav{display:grid;gap:4px;position:sticky;top:86px}
+.subnav .nav-item{padding:11px 12px}
+.subnav .nav-item.active:before{display:none}
+
+/* ---------- Profile ---------- */
+.avatar-lg{position:relative;width:96px;height:96px;flex:none}
+.avatar-lg .avatar{width:96px;height:96px;font-size:1.8rem;border-radius:calc(var(--radius) + 6px)}
+.avatar-lg label{position:absolute;right:-6px;bottom:-6px;width:34px;height:34px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:grid;place-items:center;cursor:pointer;border:3px solid var(--surface)}
+.avatar-lg label svg{width:16px;height:16px}
+.avatar-lg input{position:absolute;opacity:0;width:0;height:0}
+.avatar-lg input:focus-visible+svg{outline:2px solid var(--primary)}
+.who{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+.who h2{font-size:1.25rem}
+.faq details{border-top:1px solid var(--line);padding:14px 0}
+.faq details:first-child{border-top:0}
+.faq summary{cursor:pointer;font-weight:600;font-size:.92rem}
+.faq p{margin-top:8px;font-size:.87rem}
+
+/* ---------- Modal, toast ---------- */
+.scrim{position:fixed;inset:0;background:rgba(8,12,24,.55);z-index:70;display:none;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.scrim.open{display:flex}
+.modal{width:min(520px,100%);max-height:calc(100dvh - 32px);overflow:auto;margin:auto;background:var(--surface);border-radius:calc(var(--radius) + 4px);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.4);padding:22px}
+.modal.sm{width:min(400px,100%)}
+.scrim.open .modal{animation:pop-in .16s ease-out}
+@keyframes pop-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.more-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.more-grid .menu-link{border:1px solid var(--line);padding:12px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.modal-head p{font-size:.85rem;margin-top:4px}
+.modal-body{display:grid;gap:14px}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.check{display:flex;align-items:center;gap:10px;font-size:.88rem;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm)}
+.check input{accent-color:var(--primary);width:17px;height:17px}
+.pal-list{display:grid;gap:2px;margin-top:10px;max-height:320px;overflow:auto}
+.pal-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);text-align:left;font-size:.9rem;width:100%}
+.pal-item:hover,.pal-item.first{background:var(--primary-soft);color:var(--primary)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);background:var(--text);color:var(--bg);padding:12px 18px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:90;max-width:calc(100vw - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- Compact sidebar (desktop only) ---------- */
+@media(min-width:1001px){
+  html[data-sidebar=compact]{--sidebar-w:82px}
+  html[data-sidebar=compact] .lbl,html[data-sidebar=compact] .nav-title,html[data-sidebar=compact] .brand-text,html[data-sidebar=compact] .me-text{display:none}
+  html[data-sidebar=compact] .nav-item,html[data-sidebar=compact] .me,html[data-sidebar=compact] .brand{justify-content:center}
+  html[data-sidebar=compact] .nav-item{padding:12px 0}
+  html[data-sidebar=compact] .nav-item.active:before{left:-14px}
+  html[data-sidebar=compact] .nav-title{display:block;height:8px;padding:0;font-size:0}
+}
+
+/* ---------- Navigation layout: bottom bar ---------- */
+.bottomnav{display:none;position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(560px,calc(100% - 24px));z-index:45;padding:6px;gap:4px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:calc(var(--radius) + 8px);box-shadow:0 12px 36px rgba(20,27,45,.18)}
+.bn-item{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 4px;border-radius:calc(var(--radius) + 2px);color:var(--muted);font-size:.7rem;font-weight:600;line-height:1.2;transition:background .15s,color .15s}
+.bn-item svg.i{width:22px;height:22px}
+.bn-item:hover{color:var(--text)}
+.bn-item.active{background:var(--primary-soft);color:var(--primary);font-weight:700}
+.bn-item span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-brand{display:none}
+html[data-nav=bottom] .sidebar,html[data-nav=bottom] .side-scrim{display:none!important}
+html[data-nav=bottom] .main{margin-left:0}
+html[data-nav=bottom] .menu-btn{display:none!important}
+html[data-nav=bottom] .bottomnav{display:flex}
+html[data-nav=bottom] .tb-brand{display:grid;width:34px;height:34px;font-size:1rem}
+html[data-nav=bottom] .content{padding-bottom:calc(104px + env(safe-area-inset-bottom))}
+html[data-nav=bottom] .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+.layouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.layout{display:grid;gap:12px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);text-align:left;align-content:start}
+.layout:hover{border-color:var(--primary-line)}
+.layout[aria-pressed=true]{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 22%,transparent)}
+.lay-art{display:block;position:relative;height:78px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);overflow:hidden}
+.lay-art:before,.lay-art:after{content:"";position:absolute}
+.lay-side:before{left:0;top:0;bottom:0;width:26%;background:var(--primary);opacity:.9}
+.lay-side:after,.lay-bottom:after{left:34%;right:10%;top:14px;height:9px;border-radius:5px;background:var(--line);box-shadow:0 17px 0 var(--line),0 34px 0 var(--line)}
+.lay-bottom:before{left:20%;right:20%;bottom:8px;height:16px;border-radius:9px;background:var(--primary);opacity:.9}
+.lay-bottom:after{left:10%}
+.lay-t{display:block;font-weight:700;font-size:.9rem}
+.lay-t small{display:block;font-weight:500;color:var(--muted);font-size:.8rem;margin-top:2px}
+
+/* ---------- Responsive ---------- */
+@media(max-width:1000px){
+  .sidebar{transform:translateX(-100%);width:284px}
+  .sidebar.open{transform:none;box-shadow:0 0 60px rgba(0,0,0,.4)}
+  .side-scrim.open{display:block;position:fixed;inset:0;background:rgba(8,12,24,.5);z-index:35}
+  .main{margin-left:0}
+  .menu-btn{display:grid}
+  .search-btn{flex:0 0 40px;padding:0;justify-content:center;max-width:none}
+  .search-btn .search-label,.search-btn kbd{display:none}
+  .cols-hero,.cols-main,.cols-2,.cols-profile,.settings{grid-template-columns:1fr}
+  .subnav{position:static;grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .content{padding:18px 14px}
+  .topbar{padding:0 14px;gap:10px}
+  .crumb>span,.crumb>svg{display:none}
+  h1{font-size:1.4rem}
+  .fields{grid-template-columns:1fr}
+  .id-num{font-size:1.2rem}
+  .stat strong{font-size:1.5rem}
+  .setting{flex-wrap:wrap}
+  .tb-actions{gap:6px}
+  .layouts{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+/* ---------- Auth screen ---------- */
+body.pre-auth .app,body.pre-auth .bottomnav{display:none!important}
+body:not(.pre-auth) #authScreen{display:none!important}
+#authScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.auth-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.auth-tabs{display:flex;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:4px;margin-bottom:20px}
+.auth-tabs button{flex:1;height:36px;border-radius:calc(var(--radius-sm) - 2px);font-size:.85rem;font-weight:700;color:var(--muted)}
+.auth-tabs button[aria-selected=true]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.auth-err{background:color-mix(in srgb,var(--bad) 12%,var(--surface));color:var(--bad);border-radius:var(--radius-sm);padding:10px 12px;font-size:.83rem;font-weight:600;margin-bottom:14px}
+.auth-card .field{margin-bottom:14px}
+.auth-card .btn{width:100%;height:44px}
+.auth-foot{margin-top:16px;text-align:center}
+</style>
+</head>
+<body class="pre-auth">
+<div id="authScreen"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand"><div class="brand-mark">D</div><div class="brand-text"><b>Digital</b><small>Students</small></div></div>
+    <button class="me" id="meBtn" data-go="profile" aria-label="Open my profile"></button>
+    <nav id="nav"></nav>
+    <div class="nav-bottom" id="navBottom"></div>
+  </aside>
+  <div class="side-scrim" id="sideScrim"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" data-act="menu" aria-label="Open menu"><span data-ic="menu"></span></button>
+      <div class="brand-mark tb-brand" aria-hidden="true">D</div>
+      <div class="crumb" id="crumb"></div>
+      <button class="search-btn" data-act="palette" aria-label="Search pages and settings"><span data-ic="search"></span><span class="search-label">Search pages and settings</span><kbd>Ctrl K</kbd></button>
+      <div class="tb-actions">
+        <button class="icon-btn" data-act="popup" data-id="popNotif" aria-label="Notifications"><span data-ic="bell"></span><i class="badge-dot" id="notifDot"></i></button>
+        <button class="icon-btn" data-act="popup" data-id="popUser" aria-label="Account menu"><span id="tbAvatar"></span></button>
+      </div>
+    </header>
+    <section id="content" class="content" tabindex="-1"></section>
+  </main>
+</div>
+<nav class="bottomnav" id="bottomNav" aria-label="Main navigation"></nav>
+<div class="scrim" id="scrim"><div class="modal" id="modalBox" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+/* ============ Helpers ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* Student and application IDs are always shown as one unbroken string (no separators). */
+const clean = v => String(v).replace(/-/g, "");
+let SIN = "";
+let USERNAME = "";
+let CURRENT_SCHOOL = "";
+let TWO_STEP = false;        // authenticator-app verification on/off (from the server)
+let SESSIONS = null;         // active sign-ins for the Security page (null = not loaded yet)
+let sessLoading = false;
+const PW_HINT = "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.";
+const strongPw = pw => typeof pw === "string" && pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+function deviceLabel() {
+  const ua = navigator.userAgent || "";
+  const b = /Edg\//.test(ua) ? "Edge" : /OPR\/|Opera/.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
+  const o = /Android/.test(ua) ? "Android" : /iPhone|iPad|iPod/.test(ua) ? "iOS" : /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
+  return o ? `${b} on ${o}` : b;
+}
+
+/* ============ Supabase (student portal RPC layer) ============ */
+const SUPABASE_URL = "https://pjdtlpnlvumpefxjmjpv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqZHRscG5sdnVtcGVmeGptanB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMDcyODgsImV4cCI6MjEwMzY4MzI4OH0.xzKpZhwPU1giusOJ5HLBrzUPbKMJw1yQCAmLgT0ABBQ";
+async function sbRpc(name, params = {}) {
+  let res;
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify(params)
+    });
+  } catch (e) {
+    return { success: false, error: "Network error. Check your connection and try again." };
+  }
+  let data;
+  try { data = await res.json(); } catch (e) { data = null; }
+  if (!res.ok) return { success: false, error: (data && (data.message || data.error)) || "Request failed" };
+  return data;
+}
+const TOKEN_KEY = "digital-students:token";
+let TOKEN = "";
+try { TOKEN = localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { /* storage unavailable */ }
+function setToken(t) { TOKEN = t || ""; try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ } }
+
+/* Live data loaded after sign-in (replaces the old mock arrays) */
+let RESULTS = [];       // [{subject_name, term_name, exam_name, marks_obtained, max_marks, remarks, created_at}]
+let SCHOOLS_LIST = [];  // [{school_name, status, admission_no, admission_date, created_at}]
+let NOTES = [];         // [{id, title, body, type, link, is_read, created_at}]
+let APPS_LIST = [];     // [{id, kind, status, notes, submitted_at, resolved_at, school_name}]
+let AUTHS_LIST = [];    // [{id, kind, status, notes, requested_at, resolved_at, school_name}]
+
+const APP_KIND_LABEL = { registration: "Registration", transfer: "Transfer", class_change: "Class change", document_update: "Document update" };
+const AUTH_KIND_LABEL = { access_grant: "Access grant", transfer_request: "Transfer request", data_release: "Data release" };
+
+function relTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso), now = new Date(), diffMs = now - d, day = 86400000;
+  if (diffMs < day && d.getDate() === now.getDate()) return "Today, " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (diffMs < 2 * day) return "Yesterday";
+  return fmtDate(d);
+}
+function pct(r) { const m = Number(r.max_marks); return m > 0 ? Math.round((Number(r.marks_obtained) / m) * 100) : 0; }
+function resultsAsRows() {
+  // Shape each result like the old [name, percent, label] tuples the UI already knows how to draw.
+  return RESULTS.map(r => [r.subject_name || "Subject", pct(r), r.remarks || ""]);
+}
+function termAverages() {
+  const order = [], sums = {};
+  RESULTS.forEach(r => {
+    const t = r.term_name || "Unspecified term";
+    if (!(t in sums)) { sums[t] = { total: 0, n: 0 }; order.push(t); }
+    sums[t].total += pct(r); sums[t].n++;
+  });
+  return { labels: order, vals: order.map(t => Math.round(sums[t].total / sums[t].n)) };
+}
+
+async function loadAll() {
+  const [res, sch, note, app, auth] = await Promise.all([
+    sbRpc("list_student_exam_results", { p_token: TOKEN }),
+    sbRpc("list_student_schools", { p_token: TOKEN }),
+    sbRpc("list_student_notifications", { p_token: TOKEN }),
+    sbRpc("list_student_applications", { p_token: TOKEN }),
+    sbRpc("list_student_authorizations", { p_token: TOKEN })
+  ]);
+  RESULTS = (res && res.results) || [];
+  SCHOOLS_LIST = (sch && sch.schools) || [];
+  NOTES = (note && note.notifications) || [];
+  APPS_LIST = (app && app.applications) || [];
+  AUTHS_LIST = (auth && auth.authorizations) || [];
+  S.notifRead = NOTES.every(n => n.is_read);
+}
+function applyProfile(p) {
+  SIN = clean(p.sin || "");
+  USERNAME = p.username || "";
+  CURRENT_SCHOOL = p.current_school_name || "Not enrolled at a school yet";
+  TWO_STEP = !!p.two_step_enabled;
+  Object.assign(S.profile, {
+    full_name: p.full_name || "", dob: p.date_of_birth || "", gender: p.gender || "",
+    phone: p.phone || "", email: p.email || "", village: p.village || "", sub_county: p.sub_county || "",
+    district: p.district || "", guardian_name: p.guardian_name || "", guardian_relation: p.guardian_relation || "",
+    guardian_contact: p.guardian_contact || "", photo: p.photo_url || ""
+  });
+}
+function showApp() { document.body.classList.remove("pre-auth"); }
+function showAuth() { document.body.classList.add("pre-auth"); renderAuth("signin"); }
+
+async function boot() {
+  if (TOKEN) {
+    const r = await sbRpc("get_student_profile", { p_token: TOKEN });
+    if (r && r.success && r.must_change_password) { forcedChange = { temp: "" }; showAuth(); return; }
+    if (r && r.success) {
+      applyProfile(r);
+      await loadAll();
+      apply(); chrome(); render();
+      showApp();
+      return;
+    }
+    setToken("");
+  }
+  showAuth();
+}
+
+/* ============ Auth screen ============ */
+let authMode = "signin", authErr = "", authBusy = false;
+let pendingLogin = null; // { identifier, password, totp, stage: "totp" | "confirm" }
+let forcedChange = null; // { temp } — school reset the password, student must pick a new one
+function authScreenHTML() {
+  if (forcedChange) {
+    return `<div class="auth-card">
+      <div class="auth-brand"><div class="brand-mark">D</div><div class="brand-text"><b>Digital</b><small>Students</small></div></div>
+      <div class="pop-title" style="margin-bottom:2px">Choose a new password</div>
+      <p class="sm" style="margin-bottom:14px">You signed in with a temporary password. Set your own to continue.</p>
+      ${authErr ? `<div class="auth-err">${esc(authErr)}</div>` : ""}
+      <div class="field"><label for="fc-old">Temporary password</label><input class="input" id="fc-old" type="password" autocomplete="current-password" value="${esc(forcedChange.temp || "")}"></div>
+      <div class="field"><label for="fc-new">New password</label><input class="input" id="fc-new" type="password" autocomplete="new-password"></div>
+      <p class="sm" style="margin:-6px 0 12px">${PW_HINT}</p>
+      <div class="field"><label for="fc-new2">Confirm new password</label><input class="input" id="fc-new2" type="password" autocomplete="new-password"></div>
+      <button class="btn" data-act="auth-forced" ${authBusy ? "disabled" : ""}>${authBusy ? "Saving…" : "Save and continue"}</button>
+      <button class="btn ghost" data-act="auth-forced-cancel" style="margin-top:10px" ${authBusy ? "disabled" : ""}>Sign out</button>
+    </div>`;
+  }
+  if (pendingLogin && pendingLogin.stage === "totp") {
+    return `<div class="auth-card">
+      <div class="auth-brand"><div class="brand-mark">D</div><div class="brand-text"><b>Digital</b><small>Students</small></div></div>
+      <div class="pop-title" style="margin-bottom:2px">Two-step verification</div>
+      <p class="sm" style="margin-bottom:14px">Enter the 6-digit code from your authenticator app.</p>
+      ${authErr ? `<div class="auth-err">${esc(authErr)}</div>` : ""}
+      <div class="field"><label for="au-totp">6-digit code</label><input class="input" id="au-totp" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+      <button class="btn" data-act="auth-totp" ${authBusy ? "disabled" : ""}>${authBusy ? "Checking…" : "Verify and sign in"}</button>
+      <button class="btn ghost" data-act="auth-cancel-confirm" style="margin-top:10px" ${authBusy ? "disabled" : ""}>Cancel</button>
+    </div>`;
+  }
+  if (pendingLogin) {
+    return `<div class="auth-card">
+      <div class="auth-brand"><div class="brand-mark">D</div><div class="brand-text"><b>Digital</b><small>Students</small></div></div>
+      <div class="pop-title" style="margin-bottom:2px">Already signed in elsewhere</div>
+      <p class="sm" style="margin-bottom:14px">Your account is currently signed in on another device. Continuing here will sign that device out.</p>
+      ${authErr ? `<div class="auth-err">${esc(authErr)}</div>` : ""}
+      <button class="btn" data-act="auth-confirm-logout" ${authBusy ? "disabled" : ""}>${authBusy ? "Signing in…" : "Log out other device & sign in"}</button>
+      <button class="btn ghost" data-act="auth-cancel-confirm" style="margin-top:10px" ${authBusy ? "disabled" : ""}>Cancel</button>
+    </div>`;
+  }
+  if (authMode === "forgot") {
+    return `<div class="auth-card">
+      <div class="auth-brand"><div class="brand-mark">D</div><div class="brand-text"><b>Digital</b><small>Students</small></div></div>
+      <div class="pop-title" style="margin-bottom:2px">Reset your password</div>
+      <p class="sm" style="margin-bottom:14px">Enter these exactly as your school has them on file.</p>
+      ${authErr ? `<div class="auth-err">${esc(authErr)}</div>` : ""}
+      <div class="field"><label for="fp-name">Full name</label><input class="input" id="fp-name" autocomplete="name"></div>
+      <div class="field"><label for="fp-user">Username</label><input class="input" id="fp-user" autocomplete="username"></div>
+      <div class="field"><label for="fp-sin">Student identification number</label><input class="input" id="fp-sin" placeholder="e.g. SM094837KQ"></div>
+      <div class="field"><label for="fp-phone">Phone number</label><input class="input" id="fp-phone" autocomplete="tel"></div>
+      <div class="field"><label for="fp-pw">New password</label><input class="input" id="fp-pw" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+      <p class="sm" style="margin:-6px 0 12px">${PW_HINT}</p>
+      <button class="btn" data-act="auth-forgot" ${authBusy ? "disabled" : ""}>${authBusy ? "Resetting…" : "Reset password"}</button>
+      <div class="auth-foot sm"><button type="button" data-act="auth-tab" data-v="signin">Back to sign in</button></div>
+    </div>`;
+  }
+  const signin = authMode === "signin";
+  return `<div class="auth-card">
+    <div class="auth-brand"><div class="brand-mark">D</div><div class="brand-text"><b>Digital</b><small>Students</small></div></div>
+    <div class="auth-tabs" role="tablist">
+      <button role="tab" aria-selected="${signin}" data-act="auth-tab" data-v="signin">Sign in</button>
+      <button role="tab" aria-selected="${!signin}" data-act="auth-tab" data-v="signup">Set up account</button>
+    </div>
+    ${authErr ? `<div class="auth-err">${esc(authErr)}</div>` : ""}
+    ${signin ? `
+      <div class="field"><label for="au-id">SIN or username</label><input class="input" id="au-id" placeholder="e.g. SM094837KQ or your username" autocomplete="username"></div>
+      <div class="field"><label for="au-pw">Password</label><input class="input" id="au-pw" type="password" autocomplete="current-password"></div>
+      <button class="btn" data-act="auth-signin" ${authBusy ? "disabled" : ""}>${authBusy ? "Signing in…" : "Sign in"}</button>
+      <div class="auth-foot sm"><button type="button" data-act="auth-tab" data-v="forgot">Forgot password?</button></div>
+      <div class="auth-foot sm">New here? Use “Set up account” with the SIN your school gave you.</div>
+    ` : `
+      <div class="grid2">
+        <div class="field"><label for="au-fn">First name</label><input class="input" id="au-fn" autocomplete="given-name"></div>
+        <div class="field"><label for="au-sn">Second name</label><input class="input" id="au-sn" autocomplete="additional-name"></div>
+      </div>
+      <div class="field"><label for="au-on">Other name <span class="sm">(optional)</span></label><input class="input" id="au-on" autocomplete="off"></div>
+      <div class="field"><label for="au-un">Username</label><input class="input" id="au-un" placeholder="3–30 characters" autocomplete="username"></div>
+      <div class="field"><label for="au-sin2">Student identification number</label><input class="input" id="au-sin2" placeholder="Given to you by your school" autocomplete="off"></div>
+      <div class="field"><label for="au-ph">Phone number</label><input class="input" id="au-ph" type="tel" autocomplete="tel"></div>
+      <div class="field"><label for="au-pw2">Create a password</label><input class="input" id="au-pw2" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+      <p class="sm" style="margin:-6px 0 12px">${PW_HINT}</p>
+      <button class="btn" data-act="auth-signup" ${authBusy ? "disabled" : ""}>${authBusy ? "Setting up…" : "Set up account"}</button>
+      <div class="auth-foot sm"><button type="button" data-act="auth-tab" data-v="signin">Already set up? Switch to “Sign in”.</button></div>
+    `}
+  </div>`;
+}
+function renderAuth() {
+  const el = $("#authScreen"); if (!el) return;
+  el.innerHTML = authScreenHTML();
+  const f = el.querySelector("#au-totp, #fc-new"); if (f) setTimeout(() => f.focus(), 30);
+}
+async function finishSignIn(r, pw) {
+  setToken(r.token);
+  const prof = await sbRpc("get_student_profile", { p_token: TOKEN });
+  if (prof && prof.success && prof.must_change_password) {
+    pendingLogin = null; forcedChange = { temp: pw || "" }; authErr = ""; renderAuth(); return;
+  }
+  if (prof && prof.success) applyProfile(prof);
+  await loadAll();
+  apply(); chrome(); render();
+  showApp();
+}
+async function doSignIn() {
+  const id = ($("#au-id").value || "").trim(), pw = $("#au-pw").value || "";
+  if (!id || !pw) { authErr = "Enter your SIN or username, and your password."; renderAuth(); return; }
+  authBusy = true; authErr = ""; renderAuth();
+  const r = await sbRpc("student_login", { p_identifier: id, p_password: pw, p_device: deviceLabel() });
+  authBusy = false;
+  if (!r || !r.success) {
+    if (r && r.needs_totp) { pendingLogin = { identifier: id, password: pw, totp: null, stage: "totp" }; authErr = ""; renderAuth(); return; }
+    if (r && r.needs_confirm) { pendingLogin = { identifier: id, password: pw, totp: null, stage: "confirm" }; authErr = ""; renderAuth(); return; }
+    authErr = (r && r.error) || "Sign in failed."; renderAuth(); return;
+  }
+  await finishSignIn(r, pw);
+}
+async function doTotpSubmit() {
+  if (!pendingLogin) return;
+  const code = (($("#au-totp") || {}).value || "").replace(/\s/g, "");
+  if (!/^\d{6}$/.test(code)) { authErr = "Enter the 6-digit code."; renderAuth(); return; }
+  authBusy = true; authErr = ""; renderAuth();
+  const r = await sbRpc("student_login", { p_identifier: pendingLogin.identifier, p_password: pendingLogin.password, p_totp: code, p_device: deviceLabel() });
+  authBusy = false;
+  if (!r || !r.success) {
+    if (r && r.needs_confirm) { pendingLogin.totp = code; pendingLogin.stage = "confirm"; authErr = ""; renderAuth(); return; }
+    if (r && r.locked) { pendingLogin = null; }
+    authErr = (r && r.error) || "Sign in failed."; renderAuth(); return;
+  }
+  const pw = pendingLogin.password; pendingLogin = null;
+  await finishSignIn(r, pw);
+}
+async function doConfirmLogoutOthers() {
+  if (!pendingLogin) return;
+  authBusy = true; authErr = ""; renderAuth();
+  const r = await sbRpc("student_login", { p_identifier: pendingLogin.identifier, p_password: pendingLogin.password, p_confirm_logout_others: true, p_totp: pendingLogin.totp, p_device: deviceLabel() });
+  authBusy = false;
+  if (!r || !r.success) {
+    if (r && r.needs_totp) { pendingLogin.stage = "totp"; pendingLogin.totp = null; authErr = "That code expired. Enter a fresh one."; renderAuth(); return; }
+    if (r && r.locked) { pendingLogin = null; }
+    authErr = (r && r.error) || "Sign in failed."; renderAuth(); return;
+  }
+  const pw = pendingLogin.password; pendingLogin = null;
+  await finishSignIn(r, pw);
+}
+function cancelPendingLogin() { pendingLogin = null; authErr = ""; renderAuth(); }
+async function doForcedChange() {
+  if (!forcedChange) return;
+  const a = $("#fc-old").value, b = $("#fc-new").value, c = $("#fc-new2").value;
+  if (!a) { authErr = "Enter the temporary password you were given."; renderAuth(); return; }
+  if (!strongPw(b)) { authErr = PW_HINT; renderAuth(); return; }
+  if (b !== c) { authErr = "The new passwords don't match."; renderAuth(); return; }
+  authBusy = true; authErr = ""; renderAuth();
+  const r = await sbRpc("change_student_password", { p_token: TOKEN, p_old_password: a, p_new_password: b });
+  authBusy = false;
+  if (!r || !r.success) { authErr = (r && r.error) || "Could not change your password."; renderAuth(); return; }
+  forcedChange = null; authErr = "";
+  const prof = await sbRpc("get_student_profile", { p_token: TOKEN });
+  if (prof && prof.success && !prof.must_change_password) applyProfile(prof);
+  await loadAll();
+  apply(); chrome(); render();
+  showApp();
+  notify("Password updated");
+}
+function cancelForcedChange() {
+  forcedChange = null; authErr = "";
+  sbRpc("revoke_student_session", { p_token: TOKEN }).finally(() => { setToken(""); renderAuth(); });
+}
+async function doSignUp() {
+  const fn = ($("#au-fn").value || "").trim(), sn = ($("#au-sn").value || "").trim(), on = ($("#au-on").value || "").trim();
+  const un = ($("#au-un").value || "").trim(), sin = ($("#au-sin2").value || "").trim();
+  const ph = ($("#au-ph").value || "").trim(), pw = $("#au-pw2").value || "";
+  if (!fn || !sn) { authErr = "Enter your first and second name."; renderAuth(); return; }
+  if (!/^[A-Za-z0-9_.]{3,30}$/.test(un)) { authErr = "Username must be 3 to 30 characters: letters, numbers, underscore or period."; renderAuth(); return; }
+  if (!sin) { authErr = "Enter the SIN your school gave you."; renderAuth(); return; }
+  if (!ph) { authErr = "Enter your phone number."; renderAuth(); return; }
+  if (!strongPw(pw)) { authErr = PW_HINT; renderAuth(); return; }
+  authBusy = true; authErr = ""; renderAuth();
+  const r = await sbRpc("create_student_account", {
+    p_first_name: fn, p_second_name: sn, p_other_name: on || null,
+    p_username: un, p_sin: clean(sin), p_phone: ph, p_password: pw
+  });
+  if (!r || !r.success) { authBusy = false; authErr = (r && r.error) || "Could not set up account."; renderAuth(); return; }
+  const login = await sbRpc("student_login", { p_identifier: un, p_password: pw });
+  authBusy = false;
+  if (!login || !login.success) { authErr = (login && login.error) || "Account created — please sign in."; authMode = "signin"; renderAuth(); return; }
+  await finishSignIn(login, pw);
+}
+async function doForgotPassword() {
+  const name = ($("#fp-name").value || "").trim(), un = ($("#fp-user").value || "").trim();
+  const sin = ($("#fp-sin").value || "").trim(), ph = ($("#fp-phone").value || "").trim();
+  const pw = $("#fp-pw").value || "";
+  if (!name || !un || !sin || !ph) { authErr = "Fill in your full name, username, SIN and phone number."; renderAuth(); return; }
+  if (!strongPw(pw)) { authErr = PW_HINT; renderAuth(); return; }
+  authBusy = true; authErr = ""; renderAuth();
+  const r = await sbRpc("student_forgot_password", { p_full_name: name, p_username: un, p_sin: clean(sin), p_phone: ph, p_new_password: pw });
+  authBusy = false;
+  if (!r || !r.success) { authErr = (r && r.error) || "Could not reset your password."; renderAuth(); return; }
+  authMode = "signin"; authErr = ""; notify("Password reset. Sign in with your new password.");
+  renderAuth();
+}
+
+/* ============ Icons ============ */
+const ICON = {
+  home: '<path d="M3 11l9-8 9 8"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-6h4v6"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+  book: '<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 21V5"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  school: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  transfer: '<path d="M4 8h14l-4-4M20 16H6l4 4"/>',
+  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>',
+  file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 3.5M12 17h.01"/>',
+  logout: '<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>',
+  bell: '<path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  palette: '<path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2s0-2 1.5-2h2a3 3 0 003-3c0-6-4-11-8-11z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="11" r="1"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  check: '<path d="M5 12.5l5 5 9-10"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+  moon: '<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>',
+  monitor: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  download: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="14" r="3.5"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>',
+  reset: '<path d="M4 12a8 8 0 108-8M4 4v5h5"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18 15c2.2.5 3.5 2.3 3.5 5"/>',
+  device: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/>'
+};
+const ic = (n, cls = "") => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n] || ""}</svg>`;
+
+/* ============ Themes ============ */
+/* light = accent in light mode (also used on the student card); dark = brighter accent for dark mode */
+const THEMES = {
+  indigo:   { name: "Indigo",   light: "#4f46e5", dark: "#908bff" },
+  ocean:    { name: "Ocean",    light: "#0277bd", dark: "#4db8f5" },
+  emerald:  { name: "Emerald",  light: "#0b8f63", dark: "#34d399" },
+  amber:    { name: "Amber",    light: "#a35f00", dark: "#f5b73f" },
+  sunset:   { name: "Sunset",   light: "#d1440c", dark: "#ff8c55" },
+  rose:     { name: "Rose",     light: "#d1245a", dark: "#ff6e98" },
+  violet:   { name: "Violet",   light: "#7c3aed", dark: "#b794ff" },
+  graphite: { name: "Graphite", light: "#364152", dark: "#b4bfd1" }
+};
+const CORNERS = { sharp: [6, 4], rounded: [14, 10], soft: [22, 14] };
+const DENSITY = { comfortable: [22, 18, 13], compact: [15, 12, 8] };
+
+/* ============ State ============ */
+const KEY = "digital-students:v2";
+const DEF = {
+  mode: "light", theme: "indigo", corner: "rounded", density: "comfortable", text: 100, sidebar: "expanded", nav: "sidebar", dateFmt: "long",
+  notif: { results: true, auth: true, security: true, apps: true, digest: false },
+  channel: { push: true, sms: false, email: true },
+  privacy: { searchable: false, attendance: true },
+  notifRead: false,
+  profile: { full_name: "", dob: "", gender: "", phone: "", email: "", village: "", sub_county: "", district: "", guardian_name: "", guardian_relation: "", guardian_contact: "", photo: "" }
+};
+const merge = (a, b) => {
+  for (const k in b) {
+    if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) a[k] = merge(a[k] || {}, b[k]);
+    else a[k] = b[k];
+  }
+  return a;
+};
+let S = structuredClone(DEF);
+try { const raw = localStorage.getItem(KEY); if (raw) merge(S, JSON.parse(raw)); } catch (e) { /* storage unavailable: run with defaults */ }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
+const getp = p => p.split(".").reduce((o, k) => o[k], S);
+const setp = (p, v) => { const a = p.split("."); const l = a.pop(); a.reduce((o, k) => o[k], S)[l] = v; };
+
+const mq = matchMedia("(prefers-color-scheme: dark)");
+const isDark = () => S.mode === "dark" || (S.mode === "system" && mq.matches);
+function apply() {
+  const r = document.documentElement, st = r.style, d = isDark();
+  const t = THEMES[S.theme] || THEMES.indigo;
+  const [rd, rs] = CORNERS[S.corner] || CORNERS.rounded;
+  const [p, g, w] = DENSITY[S.density] || DENSITY.comfortable;
+  r.dataset.mode = d ? "dark" : "light";
+  r.dataset.sidebar = S.sidebar;
+  r.dataset.nav = S.nav === "bottom" ? "bottom" : "sidebar";
+  st.setProperty("--brand", t.light);
+  st.setProperty("--primary", d ? t.dark : t.light);
+  st.setProperty("--on-primary", d ? "#0b101c" : "#ffffff");
+  st.setProperty("--radius", rd + "px");
+  st.setProperty("--radius-sm", rs + "px");
+  st.setProperty("--pad", p + "px");
+  st.setProperty("--gap", g + "px");
+  st.setProperty("--row", w + "px");
+  st.setProperty("--fs", S.text / 100);
+  const meta = $('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", d ? "#0b101c" : t.light);
+}
+mq.addEventListener("change", () => { if (S.mode === "system") apply(); });
+
+/* ============ Data ============ */
+/* SUBJECTS/NOTES were mock arrays here previously; live data now comes from
+   RESULTS/NOTES (loaded by loadAll()) declared with the Supabase helpers above. */
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fmtDate(d) {
+  const m = MON[d.getMonth()], D = d.getDate(), Y = d.getFullYear();
+  if (S.dateFmt === "iso") return `${Y}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(D).padStart(2, "0")}`;
+  if (S.dateFmt === "dmy") return `${D} ${m} ${Y}`;
+  return `${m} ${D}, ${Y}`;
+}
+const full = () => (S.profile.full_name || "").trim() || "Student";
+const ini = () => full().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "DS";
+const avatar = (cls = "avatar") => `<div class="${cls}">${S.profile.photo ? `<img alt="" src="${esc(S.profile.photo)}">` : esc(ini())}</div>`;
+const greet = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
+/* ============ Shared UI pieces ============ */
+let editing = false;   // profile edit mode
+let tab = "appearance"; // settings tab
+
+const head = (h, p, actions = "") => `<div class="page-head"><div><h1>${h}</h1><p>${p}</p></div><div class="head-actions">${actions}</div></div>`;
+const stat = (i, l, v, d) => `<div class="stat"><small>${ic(i)}${l}</small><strong>${v}</strong><span class="delta">${d}</span></div>`;
+const subjRow = s => `<div class="row"><div class="row-ico">${(s[0][0] || "?")}</div><div class="row-main"><b>${esc(s[0])}</b><div class="meter"><i style="width:${s[1]}%"></i></div></div><div class="row-end"><b>${s[1]}%</b><small>${esc(s[2] || "")}</small></div></div>`;
+const tlItem = (a, b, c) => `<div class="tl-item"><i class="tl-dot"></i><div><b>${esc(a)}</b><small>${esc(b)}</small><small>${esc(c)}</small></div></div>`;
+const sw = (p, l) => `<button class="switch" role="switch" aria-checked="${!!getp(p)}" aria-label="${esc(l)}" data-act="toggle" data-path="${p}"></button>`;
+const setting = (t, d, ctl) => `<div class="setting"><div><b>${t}</b><small>${d}</small></div>${ctl}</div>`;
+const seg = (key, opts) => `<div class="seg" role="group">${opts.map(([v, l, i]) => `<button data-act="set" data-k="${key}" data-v="${v}" aria-pressed="${S[key] === v}">${i ? ic(i) : ""}${l}</button>`).join("")}</div>`;
+
+const idCard = () => `<div class="idcard">
+  <div class="id-top"><span class="id-logo"><span class="brand-mark">D</span>Digital Students</span><span class="verified">${ic("check")}Verified</span></div>
+  <div class="id-body"><div class="id-photo">${S.profile.photo ? `<img alt="" src="${esc(S.profile.photo)}">` : esc(ini())}</div>
+    <div><div class="id-name">${esc(full())}</div><div class="id-sub">${esc(CURRENT_SCHOOL)}</div></div></div>
+  <div class="id-foot"><div><div class="id-label">Student identification number</div><div class="id-num">${SIN}</div></div>
+    <button class="id-copy" data-act="copy" data-val="${SIN}" aria-label="Copy student number">${ic("copy")}</button></div>
+</div>`;
+
+function trend(vals, labels) {
+  const W = 320, H = 132, px = 34, py = 24, base = H - 26;
+  const mn = Math.min(...vals) - 6, mx = Math.max(...vals) + 3;
+  const pts = vals.map((v, i) => [px + i * (W - 2 * px) / (vals.length - 1), base - (v - mn) / (mx - mn) * (base - py)]);
+  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${base} L${pts[0][0].toFixed(1)} ${base} Z`;
+  return `<svg class="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average score by term: ${vals.join(", ")} percent">
+    <path d="${area}" fill="var(--primary)" opacity=".12"/>
+    <path d="${line}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.5" fill="var(--surface)" stroke="var(--primary)" stroke-width="2.5"/>
+    <text x="${p[0].toFixed(1)}" y="${(p[1] - 11).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">${vals[i]}%</text>
+    <text x="${p[0].toFixed(1)}" y="${H - 7}" text-anchor="middle" font-size="10" fill="var(--muted)">${labels[i]}</text>`).join("")}
+  </svg>`;
+}
+
+/* Profile field definitions. "ro" fields always render read-only (identity data set by the school). */
+const PF = [["full_name", "Full name"], ["dob", "Date of birth", "text", null, true], ["gender", "Gender", "text", null, true], ["phone", "Phone number", "tel"], ["email", "Email address", "email"], ["village", "Village"], ["sub_county", "Sub-county"], ["district", "District"]];
+const GF = [["guardian_name", "Guardian name"], ["guardian_relation", "Relationship"], ["guardian_contact", "Guardian phone", "tel"]];
+function fld(f) {
+  const [k, l, t, o, ro] = f, v = S.profile[k] || "";
+  if (!editing || ro) return `<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div></div>`;
+  if (t === "select") return `<div class="field"><label for="pf-${k}">${l}</label><select class="input" id="pf-${k}" data-pf="${k}">${o.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select></div>`;
+  return `<div class="field"><label for="pf-${k}">${l}</label><input class="input" id="pf-${k}" data-pf="${k}" type="${t || "text"}" value="${esc(v)}"></div>`;
+}
+
+const recRows = q => {
+  const r = resultsAsRows().filter(s => s[0].toLowerCase().includes(q.trim().toLowerCase()));
+  if (!RESULTS.length) return `<tr><td colspan="5"><div class="empty">No results have been recorded yet.</div></td></tr>`;
+  return r.length
+    ? r.map((s, i) => { const src = RESULTS.filter(x => x.subject_name === s[0])[0] || {}; return `<tr><td><b>${esc(s[0])}</b></td><td>${esc(src.term_name || "—")}</td><td>${s[1]}%</td><td>${esc(src.remarks || "—")}</td><td><span class="badge">Recorded</span></td></tr>`; }).join("")
+    : `<tr><td colspan="5"><div class="empty">No subject matches “${esc(q)}”. Try a shorter name.</div></td></tr>`;
+};
+
+const authStatusLabel = { pending: "Pending", approved: "Active", rejected: "Rejected", revoked: "Revoked" };
+const authRow = a => `<div class="setting"><div><b>${esc(a.school_name)}</b><small>${esc(AUTH_KIND_LABEL[a.kind] || a.kind)} · requested ${esc(fmtDate(new Date(a.requested_at)))}</small></div>
+  <div style="display:flex;align-items:center;gap:12px"><span class="badge ${a.status === "approved" ? "" : "off"}">${esc(authStatusLabel[a.status] || a.status)}</span>${a.status === "pending" || a.status === "approved" ? `<button class="btn ghost sm" data-act="revoke-auth" data-id="${a.id}">Revoke</button>` : ""}</div></div>`;
+
+
+/* ============ Settings tabs ============ */
+const SET_TABS = [["appearance", "Appearance", "palette"], ["notifications", "Notifications", "bell"], ["privacy", "Privacy and region", "shield"], ["account", "Account", "user"]];
+const SETTINGS = {
+  appearance: () => `<div class="stack">
+    <div class="panel"><div class="panel-head"><div><h2>Theme color</h2><p>Sets the accent for buttons, highlights and your student card.</p></div></div>
+      <div class="swatches">${Object.entries(THEMES).map(([id, t]) => `<button class="swatch" style="--c:${t.light}" data-act="theme" data-v="${id}" aria-pressed="${S.theme === id}"><i>${ic("check")}</i>${t.name}</button>`).join("")}</div></div>
+    <div class="panel"><div class="panel-head"><div><h2>Navigation layout</h2><p>Choose where the main menu sits.</p></div></div>
+      <div class="layouts">
+        <button class="layout" data-act="set" data-k="nav" data-v="sidebar" aria-pressed="${S.nav !== "bottom"}"><span class="lay-art lay-side"></span><span class="lay-t">Sidebar<small>Menu on the side. Slides in on phones.</small></span></button>
+        <button class="layout" data-act="set" data-k="nav" data-v="bottom" aria-pressed="${S.nav === "bottom"}"><span class="lay-art lay-bottom"></span><span class="lay-t">Bottom bar<small>Main pages one tap away, thumb friendly.</small></span></button>
+      </div></div>
+    <div class="panel"><div class="panel-head"><div><h2>Display</h2><p>Changes apply immediately and are saved on this device.</p></div><button class="btn ghost sm" data-act="reset">${ic("reset")}Reset</button></div>
+      ${setting("Mode", "Light, dark, or follow your device.", seg("mode", [["light", "Light", "sun"], ["dark", "Dark", "moon"], ["system", "System", "monitor"]]))}
+      ${setting("Corners", "How rounded cards and buttons look.", seg("corner", [["sharp", "Sharp"], ["rounded", "Rounded"], ["soft", "Soft"]]))}
+      ${setting("Density", "Compact fits more on the screen.", seg("density", [["comfortable", "Comfortable"], ["compact", "Compact"]]))}
+      ${S.nav === "bottom" ? "" : setting("Sidebar width", "Icons only saves space on large screens.", seg("sidebar", [["expanded", "Expanded"], ["compact", "Icons only"]]))}
+      ${setting("Text size", "Scales all text in the app.", `<div style="display:flex;align-items:center;gap:12px"><input type="range" id="textRange" min="90" max="120" step="5" value="${S.text}" aria-label="Text size"><b id="textVal" style="min-width:42px">${S.text}%</b></div>`)}
+    </div>
+    <div class="panel"><div class="panel-head"><h2>Preview</h2></div>
+      <div class="preview"><button class="btn">Primary</button><button class="btn soft">Soft</button><button class="btn ghost">Outline</button><span class="badge">Verified</span><span class="badge pending">Pending</span></div>
+      <div class="meter" style="margin-top:16px"><i style="width:72%"></i></div></div>
+  </div>`,
+  notifications: () => `<div class="stack">
+    <div class="panel"><div class="panel-head"><div><h2>What to tell me about</h2><p>Choose which events send you a notification.</p></div></div>
+      ${setting("New results", "When a result is added to your record.", sw("notif.results", "New results"))}
+      ${setting("Authorization requests", "When a school asks to view your data.", sw("notif.auth", "Authorization requests"))}
+      ${setting("Security alerts", "New sign-ins and account changes.", sw("notif.security", "Security alerts"))}
+      ${setting("Application updates", "Progress on requests you submitted.", sw("notif.apps", "Application updates"))}
+      ${setting("Weekly summary", "One email each Monday with your progress.", sw("notif.digest", "Weekly summary"))}</div>
+    <div class="panel"><div class="panel-head"><div><h2>How to reach me</h2><p>Delivery channels for the notifications above.</p></div></div>
+      ${setting("Push notifications", "On this device.", sw("channel.push", "Push notifications"))}
+      ${setting("SMS", "To " + esc(S.profile.phone) + ".", sw("channel.sms", "SMS"))}
+      ${setting("Email", "To " + esc(S.profile.email) + ".", sw("channel.email", "Email"))}</div>
+  </div>`,
+  privacy: () => `<div class="stack">
+    <div class="panel"><div class="panel-head"><div><h2>Privacy</h2><p>Control what schools and others can see.</p></div></div>
+      ${setting("Discoverable by schools", "Let schools find you by student number when starting a transfer.", sw("privacy.searchable", "Discoverable by schools"))}
+      ${setting("Share attendance with authorized schools", "Attendance is included when you authorize a school.", sw("privacy.attendance", "Share attendance"))}
+      ${setting("School authorizations", "See which schools can view your records.", `<button class="btn ghost sm" data-go="access">Manage</button>`)}
+      ${setting("Download my data", "Get a copy of your records and profile.", `<button class="btn ghost sm" data-act="download">${ic("download")}Download</button>`)}</div>
+    <div class="panel"><div class="panel-head"><div><h2>Region</h2><p>How dates are shown across the app.</p></div></div>
+      ${setting("Date format", "Example: " + fmtDate(new Date("2026-09-19T12:00:00")), `<select class="input" style="width:190px" data-sel="dateFmt" aria-label="Date format"><option value="long" ${S.dateFmt === "long" ? "selected" : ""}>Sep 19, 2026</option><option value="dmy" ${S.dateFmt === "dmy" ? "selected" : ""}>19 Sep 2026</option><option value="iso" ${S.dateFmt === "iso" ? "selected" : ""}>2026-09-19</option></select>`)}</div>
+  </div>`,
+  account: () => `<div class="stack">
+    <div class="panel"><div class="panel-head"><div><h2>Account</h2><p>Your sign-in and identity details.</p></div></div>
+      ${setting("Sign in with", "Your student number or username, and password.", `<b class="mono">${SIN}${USERNAME ? " · " + esc(USERNAME) : ""}</b>`)}
+      ${setting("Student number", "Permanent. It never changes, even if you move schools.", `<span style="display:flex;gap:10px;align-items:center"><b class="mono">${SIN}</b><button class="btn ghost sm" data-act="copy" data-val="${SIN}">${ic("copy")}Copy</button></span>`)}
+      ${setting("Profile", "Edit your name, photo and contact details.", `<button class="btn ghost sm" data-go="profile">${ic("edit")}Edit profile</button>`)}
+      ${setting("Password and security", "Change your password and manage sign-in protection.", `<button class="btn ghost sm" data-go="security">${ic("lock")}Security</button>`)}</div>
+    <div class="panel"><div class="panel-head"><div><h2>Reset preferences</h2><p>Restores appearance, notifications and privacy to their defaults. Your profile and records stay as they are.</p></div><button class="btn danger sm" data-act="reset">${ic("reset")}Reset</button></div></div>
+  </div>`
+};
+
+/* ============ Active sessions (Security page) ============ */
+function sessionsHTML() {
+  if (SESSIONS === null) return `<div class="empty">Loading…</div>`;
+  if (!SESSIONS.length) return `<div class="empty">No active sign-ins.</div>`;
+  return SESSIONS.map(x => `<div class="row"><div class="row-ico">${ic("device")}</div><div class="row-main"><b>${esc(x.device || "Unknown device")}${x.is_current ? " · This device" : ""}</b><small>Signed in ${esc(relTime(x.created_at))} · last active ${esc(relTime(x.last_seen_at))}</small></div>${x.is_current ? `<span class="badge">Active</span>` : `<button class="btn ghost sm" data-act="revoke-session" data-id="${esc(x.id)}">Log out</button>`}</div>`).join("");
+}
+async function loadSessions() {
+  if (sessLoading) return;
+  sessLoading = true;
+  const r = await sbRpc("list_student_sessions", { p_token: TOKEN });
+  sessLoading = false;
+  SESSIONS = (r && r.success && r.sessions) || [];
+  if (cur === "security") render(true);
+}
+
+/* ============ Pages ============ */
+const PAGES = {
+  dashboard: { t: "Dashboard", i: "home", r: () => {
+    const rows = resultsAsRows(), avg = rows.length ? Math.round(rows.reduce((n, s) => n + s[1], 0) / rows.length) : null;
+    const subjects = new Set(RESULTS.map(r => r.subject_name)).size;
+    const pendingApps = APPS_LIST.filter(a => a.status === "pending").length;
+    const { labels, vals } = termAverages();
+    return `
+    <div class="page-head"><div><h1>${greet()}, ${esc((S.profile.full_name || "Student").split(" ")[0])}</h1><p>Your records, results and school access in one place.</p></div><div class="chip">${ic("calendar")}${fmtDate(new Date())}</div></div>
+    <div class="grid cols-hero">${idCard()}
+      <div class="stats">${stat("star", "Average score", avg === null ? "—" : avg + "%", avg === null ? "No results yet" : "Across " + rows.length + " recorded results")}${stat("book", "Subjects", String(subjects), "With at least one result")}${stat("shield", "Active authorizations", String(AUTHS_LIST.filter(a => a.status === "approved").length), "Schools with data access")}${stat("file", "Pending applications", String(pendingApps), "Awaiting a decision")}</div></div>
+    <div class="grid cols-main" style="margin-top:var(--gap)">
+      <div class="panel"><div class="panel-head"><h2>Academic performance</h2><button class="btn ghost sm" data-go="results">View results</button></div>${rows.length ? rows.slice(0, 4).map(subjRow).join("") : `<div class="empty">No results have been recorded yet.</div>`}</div>
+      <div class="stack">
+        <div class="panel"><div class="panel-head"><h2>Average by term</h2></div>${labels.length ? trend(vals, labels) : `<div class="empty">Not enough data for a trend yet.</div>`}</div>
+        <div class="panel"><div class="panel-head"><h2>Recent activity</h2></div>${NOTES.length ? NOTES.slice(0, 3).map(n => tlItem(n.title, n.body || "", relTime(n.created_at))).join("") : `<div class="empty">Nothing yet.</div>`}</div>
+      </div></div>`; } },
+
+  profile: { t: "My profile", i: "user", r: () => head("My profile", "Your verified identity and personal details.",
+    editing ? `<button class="btn ghost" data-act="cancel-profile">Cancel</button><button class="btn" data-act="save-profile">${ic("check")}Save changes</button>` : `<button class="btn" data-act="edit-profile">${ic("edit")}Edit profile</button>`) + `
+    <div class="grid cols-profile">
+      <div class="stack"><div class="panel">
+        <div class="who"><div class="avatar-lg">${avatar()}<label title="Change photo">${ic("camera")}<input type="file" id="photoInput" accept="image/*" aria-label="Upload profile photo"></label></div>
+          <div><h2>${esc(full())}</h2><p class="sm">Student at ${esc(CURRENT_SCHOOL)}</p><span class="badge" style="margin-top:8px">${ic("check")}Verified</span></div></div>
+        <div class="id-inline"><div><div class="sm">Student number</div><div class="mono">${SIN}</div></div><button class="btn soft sm" data-act="copy" data-val="${SIN}">${ic("copy")}Copy</button></div>
+        ${S.profile.photo ? `<button class="btn ghost sm" style="margin-top:12px" data-act="remove-photo">Remove photo</button>` : ""}
+      </div></div>
+      <div class="stack">
+        <div class="panel"><div class="panel-head"><h2>Personal information</h2></div><div class="fields">${PF.map(fld).join("")}</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Guardian</h2><p>Who we contact about your account.</p></div></div><div class="fields">${GF.map(fld).join("")}</div></div>
+        <div class="panel"><div class="panel-head"><h2>Account</h2></div><div class="fields"><div class="field"><label>Signs in with</label><div class="val mono">${SIN}</div></div><div class="field"><label>Account status</label><div class="val">Verified</div></div></div></div>
+      </div></div>` },
+
+  academics: { t: "Academic records", i: "book", r: () => head("Academic records", "Your academic history, linked to your student number.", `<button class="btn ghost" data-act="download">${ic("download")}Export</button>`) + `
+    <div class="panel"><div style="display:flex;gap:10px;margin-bottom:12px"><input class="input" id="recQ" placeholder="Search by subject" aria-label="Search records"></div>
+    <div class="table-wrap"><table><thead><tr><th>Subject</th><th>Term</th><th>Score</th><th>Remarks</th><th>Status</th></tr></thead><tbody id="recBody">${recRows("")}</tbody></table></div></div>` },
+
+  results: { t: "Results and performance", i: "chart", r: () => {
+    const rows = resultsAsRows(), sorted = [...rows].sort((a, b) => b[1] - a[1]);
+    const avg = rows.length ? Math.round(rows.reduce((n, s) => n + s[1], 0) / rows.length) : null;
+    const { labels, vals } = termAverages();
+    if (!rows.length) return head("Results and performance", "Track your progress across subjects and terms.") + `<div class="panel"><div class="empty">No results have been recorded yet. They'll show up here as soon as your school posts them.</div></div>`;
+    return head("Results and performance", "Track your progress across subjects and terms.", `<button class="btn ghost" data-act="download">${ic("download")}Download data</button>`) + `
+    <div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:var(--gap)">
+      ${stat("chart", "Average score", avg + "%", "Across " + rows.length + " results")}${stat("star", "Highest score", sorted[0][1] + "%", sorted[0][0])}${stat("check", "Results recorded", String(rows.length), "This academic record")}</div>
+    <div class="grid cols-main"><div class="panel"><div class="panel-head"><h2>Subject performance</h2></div>${sorted.map(subjRow).join("")}</div>
+    <div class="panel"><div class="panel-head"><h2>Average by term</h2></div>${labels.length ? trend(vals, labels) : `<div class="empty">Not enough data for a trend yet.</div>`}</div></div>`;
+  } },
+
+  schools: { t: "School history", i: "school", r: () => head("School history", "Schools connected to your student identity.") + `
+    <div class="panel">${SCHOOLS_LIST.length ? SCHOOLS_LIST.map(s => `<div class="row"><div class="row-ico">${esc((s.school_name || "?").slice(0, 2).toUpperCase())}</div><div class="row-main"><b>${esc(s.school_name)}</b><small>${esc(s.admission_no ? "Admission no. " + s.admission_no : "")}${s.admission_date ? " · since " + esc(fmtDate(new Date(s.admission_date))) : ""}</small></div><span class="badge ${s.status === "active" ? "" : "off"}">${esc(s.status === "active" ? "Current" : "Past")}</span></div>`).join("") : `<div class="empty">No schools are linked to your student identity yet.</div>`}</div>` },
+
+  access: { t: "Data authorization", i: "shield", r: () => head("Data authorization", "Control which schools can access your records.", `<button class="btn" data-act="authorize">${ic("plus")}Authorize school</button>`) + `
+    <div class="panel"><div class="panel-head"><h2>Schools</h2></div>${AUTHS_LIST.length ? AUTHS_LIST.filter(a => a.kind !== "transfer_request").map(authRow).join("") || `<div class="empty">No school has been authorized yet.</div>` : `<div class="empty">No school has been authorized yet.</div>`}</div>` },
+
+  transfer: { t: "School transfer", i: "transfer", r: () => head("School transfer", "Move your academic identity securely to another school.") + `
+    <div class="grid cols-2"><div class="panel"><h2 style="margin-bottom:8px">Start a transfer</h2><p class="sm" style="margin-bottom:18px">Give your new school access to the records you choose. Your student number stays the same.</p><button class="btn" data-act="transfer">${ic("transfer")}Transfer to another school</button></div>
+    <div class="panel"><h2 style="margin-bottom:14px">Your permanent number</h2><div class="id-inline"><div><div class="sm">Student number</div><div class="mono">${SIN}</div></div><span class="badge">${ic("check")}Verified</span></div><p class="sm" style="margin-top:12px">This number never changes.</p></div></div>
+    ${AUTHS_LIST.filter(a => a.kind === "transfer_request").length ? `<div class="panel" style="margin-top:var(--gap)"><div class="panel-head"><h2>Transfer requests</h2></div>${AUTHS_LIST.filter(a => a.kind === "transfer_request").map(authRow).join("")}</div>` : ""}` },
+
+  security: { t: "Security", i: "lock", r: () => head("Security", "Protect your Digital Students account.") + `
+    <div class="grid cols-2">
+      <div class="panel"><div class="panel-head"><h2>Where you're signed in</h2></div>${sessionsHTML()}<button class="btn danger" style="margin-top:14px" data-act="signout-others" ${SESSIONS && SESSIONS.length > 1 ? "" : "disabled"}>Log out all other devices</button></div>
+      <div class="panel"><div class="panel-head"><h2>Sign-in protection</h2></div>
+        ${setting("Password", "Used with your student number to sign in.", `<button class="btn ghost sm" data-act="pw">Change</button>`)}
+        ${setting("Two-step verification", TWO_STEP ? "On. Signing in needs a code from your authenticator app." : "Ask for a code from an authenticator app when you sign in.", TWO_STEP ? `<button class="btn ghost sm" data-act="2fa-off">Turn off</button>` : `<button class="btn ghost sm" data-act="2fa-on">Set up</button>`)}</div></div>` },
+
+  applications: { t: "Applications", i: "file", r: () => head("Applications", "Track requests submitted for you.", `<button class="btn" data-act="new-app">${ic("plus")}New application</button>`) + `
+    <div class="panel"><div class="table-wrap"><table><thead><tr><th>Application</th><th>School</th><th>Date</th><th>Status</th></tr></thead><tbody>${APPS_LIST.length ? APPS_LIST.map(a => `<tr><td><b>${esc(APP_KIND_LABEL[a.kind] || a.kind)}</b>${a.notes ? `<div class="sm">${esc(a.notes)}</div>` : ""}</td><td>${esc(a.school_name || "—")}</td><td>${esc(fmtDate(new Date(a.submitted_at)))}</td><td><span class="badge ${a.status === "approved" ? "" : a.status === "rejected" ? "off" : "pending"}">${esc(a.status[0].toUpperCase() + a.status.slice(1))}</span></td></tr>`).join("") : `<tr><td colspan="4"><div class="empty">No applications submitted yet.</div></td></tr>`}</tbody></table></div></div>` },
+
+  settings: { t: "Settings", i: "settings", r: () => head("Settings", "Make Digital Students look and behave the way you like.") + `
+    <div class="settings"><nav class="subnav" aria-label="Settings sections">${SET_TABS.map(([id, l, i]) => `<button class="nav-item ${tab === id ? "active" : ""}" data-act="tab" data-v="${id}">${ic(i)}<span>${l}</span></button>`).join("")}</nav>
+    <div>${SETTINGS[tab]()}</div></div>` },
+
+  help: { t: "Help and support", i: "help", r: () => head("Help and support", "Answers to common questions.") + `
+    <div class="grid cols-main"><div class="panel faq"><div class="panel-head"><h2>Frequently asked</h2></div>
+      <details><summary>What is my student number?</summary><p>It is your permanent identity across every school. It is ${SIN} and does not change when you transfer.</p></details>
+      <details><summary>How do I let a new school see my records?</summary><p>Open Data authorization, choose Authorize school, and pick the records to share. You can revoke access at any time.</p></details>
+      <details><summary>How do I correct a mistake in my details?</summary><p>Submit a Personal information correction from Applications. A school administrator reviews it.</p></details>
+      <details><summary>How do I change the theme or turn on dark mode?</summary><p>Open Settings, choose Appearance, then pick light, dark or a theme color. You can also change the navigation layout there.</p></details></div>
+    <div class="panel"><h2 style="margin-bottom:8px">Still need help?</h2><p class="sm" style="margin-bottom:16px">Send a message to the support team and include your student number.</p><button class="btn" data-act="contact">Contact support</button></div></div>` }
+};
+const GROUPS = [["Overview", ["dashboard"]], ["My records", ["profile", "academics", "results", "schools"]], ["Access", ["access", "transfer", "applications"]], ["Account", ["security", "settings"]]];
+/* ============ Toast, modal, popovers ============ */
+let toastTimer;
+function notify(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+let modalOk = null, popId = null;
+const box = () => $("#modalBox");
+function modal(title, sub, body, okLabel = "Save", onOk = null, danger = false) {
+  modalOk = onOk; popId = null;
+  box().className = "modal";
+  box().innerHTML = `<div class="modal-head"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ""}</div></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot"><button class="btn ghost" data-act="modal-close">Cancel</button><button class="btn ${danger ? "danger" : ""}" data-act="modal-ok">${okLabel}</button></div>`;
+  $("#scrim").classList.add("open");
+  setTimeout(() => { const f = $("#modalBox input,#modalBox select"); if (f) f.focus(); }, 30);
+}
+const closeModal = () => { $("#scrim").classList.remove("open"); modalOk = null; popId = null; };
+
+/* Pop-ups open in the centre of the screen. The device back button, Esc or a tap outside closes them. */
+const NAV_BOTTOM = ["dashboard", "academics", "results", "profile"];
+const BN_LABEL = { dashboard: "Home", academics: "Records", results: "Results", profile: "Profile" };
+const MORE_IDS = ["schools", "access", "transfer", "applications", "security", "settings", "help"];
+const POPS = {
+  popNotif: () => `<div class="modal-head"><h2>Notifications</h2><button class="btn soft sm" data-act="mark-read">Mark all read</button></div>
+    ${NOTES.length ? NOTES.map(n => `<div class="note">${n.is_read ? "" : '<i class="tl-dot"></i>'}<div><b>${esc(n.title)}</b><small>${esc(n.body || "")}</small><small>${esc(relTime(n.created_at))}</small></div></div>`).join("") : `<div class="empty">No notifications yet.</div>`}`,
+  popUser: () => `<div class="who" style="margin-bottom:12px">${avatar()}<div><b>${esc(full())}</b><div class="sm mono">${SIN}</div></div></div><hr>
+    <button class="menu-link" data-go="profile">${ic("user")}My profile</button>
+    <button class="menu-link" data-go="settings">${ic("settings")}Settings</button>
+    <button class="menu-link" data-go="help">${ic("help")}Help and support</button><hr>
+    <button class="menu-link" style="color:var(--bad)" data-act="logout">${ic("logout")}Log out</button>`,
+  popMore: () => `<div class="modal-head"><h2>More</h2></div>
+    <div class="more-grid">${MORE_IDS.map(id => `<button class="menu-link" data-go="${id}">${ic(PAGES[id].i)}${PAGES[id].t}</button>`).join("")}</div><hr>
+    <button class="menu-link" style="color:var(--bad)" data-act="logout">${ic("logout")}Log out</button>`
+};
+function openPopup(id) {
+  modalOk = null; popId = id;
+  box().className = "modal sm";
+  box().innerHTML = POPS[id]();
+  $("#scrim").classList.add("open");
+}
+function refreshPops() { if (popId && $("#scrim").classList.contains("open")) box().innerHTML = POPS[popId](); }
+
+/* ============ Chrome (sidebar, topbar bits) ============ */
+const navItem = id => `<a class="nav-item" href="#${id}" title="${PAGES[id].t}">${ic(PAGES[id].i)}<span class="lbl">${PAGES[id].t}</span></a>`;
+function chrome() {
+  $("#meBtn").innerHTML = `${avatar()}<div class="me-text"><b>${esc(full())}</b><small>${SIN}</small></div>`;
+  $("#nav").innerHTML = GROUPS.map(([g, ids]) => `<div class="nav-title">${g}</div>${ids.map(navItem).join("")}`).join("");
+  $("#navBottom").innerHTML = navItem("help") + `<button class="nav-item danger" data-act="logout" title="Log out">${ic("logout")}<span class="lbl">Log out</span></button>`;
+  $("#bottomNav").innerHTML = NAV_BOTTOM.map(id => `<a class="bn-item" href="#${id}" title="${PAGES[id].t}">${ic(PAGES[id].i)}<span>${BN_LABEL[id]}</span></a>`).join("")
+    + `<button class="bn-item" id="bnMore" data-act="popup" data-id="popMore" aria-label="More pages">${ic("menu")}<span>More</span></button>`;
+  $("#tbAvatar").innerHTML = avatar();
+  $("#notifDot").style.display = S.notifRead ? "none" : "block";
+  markActive();
+}
+function markActive() {
+  $$("#nav a,#navBottom a").forEach(a => {
+    const on = a.getAttribute("href") === "#" + cur;
+    a.classList.toggle("active", on);
+    if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  $$("#bottomNav a").forEach(a => {
+    const on = a.getAttribute("href") === "#" + cur;
+    a.classList.toggle("active", on);
+    if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  const more = $("#bnMore");
+  if (more) more.classList.toggle("active", !NAV_BOTTOM.includes(cur));
+}
+
+/* ============ Router ============ */
+let cur = "dashboard";
+const route = () => { const p = location.hash.slice(1); return PAGES[p] ? p : "dashboard"; };
+function render(keepScroll) {
+  cur = route();
+  if (cur !== "security") SESSIONS = null;
+  $("#content").innerHTML = PAGES[cur].r();
+  if (cur === "security" && SESSIONS === null) loadSessions();
+  $("#crumb").innerHTML = `<span>Digital Students</span>${ic("chev")}<b>${PAGES[cur].t}</b>`;
+  document.title = PAGES[cur].t + " | Digital Students";
+  markActive();
+  if (!keepScroll) window.scrollTo(0, 0);
+  closeSidebar();
+  setTimeout(syncOverlay, 0);
+}
+/* Navigating while an overlay entry is on top of the history replaces that entry, so Back never lands on a stale screen. */
+function go(p) {
+  closeSidebar();
+  if (location.hash === "#" + p) { render(); return; }
+  if (ovOpen) { ovOpen = false; editing = false; history.replaceState(null, "", "#" + p); render(); }
+  else location.hash = p;
+}
+window.addEventListener("hashchange", () => {
+  if (ovOpen) { ovOpen = false; closeModal(); closeSidebar(); }
+  editing = false; render();
+});
+
+/* ============ Device back button ============
+   Opening a pop-up, the menu drawer or profile editing adds one history entry.
+   Pressing Back (or the browser/Android system back gesture) closes it instead of leaving the page.
+   Closing any other way (Esc, tap outside, Cancel, Save) removes that entry again. */
+let ovOpen = false;
+const overlayVisible = () => $("#scrim").classList.contains("open") || $("#sidebar").classList.contains("open") || editing;
+function syncOverlay() {
+  const v = overlayVisible();
+  if (v && !ovOpen) { history.pushState({ overlay: true }, ""); ovOpen = true; }
+  else if (!v && ovOpen) { ovOpen = false; history.back(); }
+}
+window.addEventListener("popstate", () => {
+  if (!ovOpen) { if (history.state && history.state.overlay) history.back(); return; }
+  ovOpen = false;
+  const wasEditing = editing;
+  closeModal(); closeSidebar(); editing = false;
+  if (wasEditing) render(true);
+});
+const closeSidebar = () => { $("#sidebar").classList.remove("open"); $("#sideScrim").classList.remove("open"); };
+function commit() { save(); apply(); render(true); chrome(); refreshPops(); }
+
+/* ============ Command palette ============ */
+const PAL = () => [
+  ...Object.entries(PAGES).map(([id, p]) => ({ label: p.t, icon: p.i, run: () => go(id) })),
+  { label: isDark() ? "Switch to light mode" : "Switch to dark mode", icon: isDark() ? "sun" : "moon", run: () => { S.mode = isDark() ? "light" : "dark"; commit(); } },
+  { label: "Change theme color", icon: "palette", run: () => { tab = "appearance"; go("settings"); } },
+  { label: S.nav === "bottom" ? "Use sidebar navigation" : "Use bottom navigation", icon: "menu", run: () => { S.nav = S.nav === "bottom" ? "sidebar" : "bottom"; commit(); } }
+];
+function openPalette() {
+  modalOk = null; popId = null;
+  box().className = "modal";
+  $("#modalBox").innerHTML = `<input class="input" id="palQ" placeholder="Search pages and settings" aria-label="Search pages and settings" autocomplete="off"><div class="pal-list" id="palList"></div>`;
+  $("#scrim").classList.add("open");
+  fillPalette("");
+  setTimeout(() => $("#palQ").focus(), 30);
+}
+function fillPalette(q) {
+  const items = PAL().filter(x => x.label.toLowerCase().includes(q.trim().toLowerCase()));
+  window._pal = items;
+  $("#palList").innerHTML = items.length
+    ? items.map((x, i) => `<button class="pal-item ${i === 0 ? "first" : ""}" data-act="pal" data-i="${i}">${ic(x.icon)}${x.label}</button>`).join("")
+    : `<div class="empty">Nothing matches “${esc(q)}”. Try “profile” or “dark”.</div>`;
+}
+
+/* ============ Modals for actions ============ */
+function askPassword() {
+  modal("Change password", PW_HINT, `
+    <div class="field"><label for="m1">Current password</label><input class="input" id="m1" type="password" autocomplete="current-password"></div>
+    <div class="field"><label for="m2">New password</label><input class="input" id="m2" type="password" autocomplete="new-password"></div>
+    <div class="field"><label for="m3">Confirm new password</label><input class="input" id="m3" type="password" autocomplete="new-password"></div>`, "Update password", () => {
+    const a = $("#m1").value, b = $("#m2").value, c = $("#m3").value;
+    if (!a) { notify("Enter your current password."); return false; }
+    if (!strongPw(b)) { notify(PW_HINT); return false; }
+    if (b !== c) { notify("The new passwords don't match."); return false; }
+    sbRpc("change_student_password", { p_token: TOKEN, p_old_password: a, p_new_password: b })
+      .then(r => notify(r && r.success ? "Password updated" : ((r && r.error) || "Could not update password")));
+  });
+}
+function askSchool(title, sub, label, kind, okMsg) {
+  let schoolMap = {}, timer;
+  modal(title, sub, `<div class="field"><label for="m1">School name</label><input class="input" id="m1" list="schoolList" autocomplete="off" placeholder="Start typing a school name"><datalist id="schoolList"></datalist></div>
+    <div class="field"><label for="m2">Notes (optional)</label><input class="input" id="m2" placeholder="Anything the school should know"></div>`, label, () => {
+    const v = $("#m1").value.trim(), notes = $("#m2").value.trim();
+    if (!v) { notify("Enter a school name."); return false; }
+    sbRpc("request_student_authorization", { p_token: TOKEN, p_school_name: v, p_kind: kind, p_notes: notes || null, p_school_id: schoolMap[v] || null })
+      .then(async r => {
+        if (r && r.success) { notify(okMsg + " " + v); await loadAll(); render(true); }
+        else notify((r && r.error) || "Could not send the request");
+      });
+  });
+  const inp = $("#m1");
+  if (inp) inp.addEventListener("input", () => {
+    clearTimeout(timer);
+    const q = inp.value.trim();
+    if (q.length < 3) return;
+    timer = setTimeout(async () => {
+      const r = await sbRpc("search_schools_for_student", { p_token: TOKEN, p_query: q });
+      if (!(r && r.success && Array.isArray(r.schools))) return;
+      schoolMap = {};
+      $("#schoolList").innerHTML = r.schools.map(x => { const lb = x.name + (x.district ? " (" + x.district + ")" : ""); schoolMap[lb] = x.id; return `<option value="${esc(lb)}"></option>`; }).join("");
+    }, 250);
+  });
+}
+function askNewApp() {
+  modal("New application", "Choose what you want to request.", `<div class="field"><label for="m1">Request type</label><select class="input" id="m1">
+    <option value="document_update">Personal information correction</option>
+    <option value="registration">Academic record request</option>
+    <option value="class_change">Class change</option>
+    <option value="transfer">Transfer certificate</option></select></div>
+    <div class="field"><label for="m2">Notes (optional)</label><input class="input" id="m2" placeholder="Add any detail that helps the reviewer"></div>`, "Submit application", () => {
+    const kind = $("#m1").value, notes = $("#m2").value.trim();
+    sbRpc("submit_student_application", { p_token: TOKEN, p_kind: kind, p_notes: notes || null })
+      .then(async r => {
+        if (r && r.success) { notify("Application submitted"); await loadAll(); render(true); }
+        else notify((r && r.error) || "Could not submit application");
+      });
+  });
+}
+function askReset() {
+  modal("Reset preferences?", "Appearance, notifications and privacy go back to their defaults. Your profile and records are not changed.", "", "Reset preferences", () => {
+    ["mode", "theme", "corner", "density", "text", "sidebar", "nav", "dateFmt", "notif", "channel", "privacy"].forEach(k => { S[k] = structuredClone(DEF[k]); });
+    commit(); notify("Preferences reset");
+  }, true);
+}
+function doRevokeAuth(id) {
+  sbRpc("revoke_student_authorization", { p_token: TOKEN, p_id: id }).then(async r => {
+    if (r && r.success) { notify("Authorization revoked"); await loadAll(); render(true); }
+    else notify((r && r.error) || "Could not revoke authorization");
+  });
+}
+
+/* ============ Two-step verification, sessions, data export ============ */
+async function ask2faSetup() {
+  const r = await sbRpc("student_2fa_begin", { p_token: TOKEN });
+  if (!r || !r.success) { notify((r && r.error) || "Could not start setup"); return; }
+  const key = String(r.secret).match(/.{1,4}/g).join(" ");
+  modal("Set up two-step verification", "Use an authenticator app such as Google Authenticator, Microsoft Authenticator or Authy.", `
+    <p class="sm" style="margin-bottom:10px">1. In your app choose “Enter a setup key” and type this key, or <a href="${esc(r.otpauth_uri)}" style="text-decoration:underline">open it in your authenticator app</a> on this phone.</p>
+    <div class="id-inline" style="margin-bottom:12px"><div class="mono" style="letter-spacing:.06em;word-break:break-all">${esc(key)}</div><button class="btn soft sm" data-act="copy-2fa" data-val="${esc(r.secret)}">${ic("copy")}Copy</button></div>
+    <p class="sm" style="margin-bottom:10px">2. Enter the 6-digit code your app shows.</p>
+    <div class="field"><label for="m1">6-digit code</label><input class="input" id="m1" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>`, "Turn on", () => {
+    const code = ($("#m1").value || "").replace(/\s/g, "");
+    if (!/^\d{6}$/.test(code)) { notify("Enter the 6-digit code."); return false; }
+    sbRpc("student_2fa_enable", { p_token: TOKEN, p_code: code }).then(r2 => {
+      if (r2 && r2.success) { TWO_STEP = true; closeModal(); notify("Two-step verification is on"); render(true); }
+      else notify((r2 && r2.error) || "Could not turn it on");
+    });
+    return false;
+  });
+}
+function ask2faOff() {
+  modal("Turn off two-step verification?", "Confirm with your password and a current code from your app.", `
+    <div class="field"><label for="m0">Password</label><input class="input" id="m0" type="password" autocomplete="current-password"></div>
+    <div class="field"><label for="m1">6-digit code</label><input class="input" id="m1" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>`, "Turn off", () => {
+    const pw = $("#m0").value, code = ($("#m1").value || "").replace(/\s/g, "");
+    if (!pw) { notify("Enter your password."); return false; }
+    if (!/^\d{6}$/.test(code)) { notify("Enter the 6-digit code."); return false; }
+    sbRpc("student_2fa_disable", { p_token: TOKEN, p_password: pw, p_code: code }).then(r => {
+      if (r && r.success) { TWO_STEP = false; closeModal(); notify("Two-step verification is off"); render(true); }
+      else notify((r && r.error) || "Could not turn it off");
+    });
+    return false;
+  }, true);
+}
+async function doExport() {
+  notify("Preparing your download…");
+  const r = await sbRpc("export_student_data", { p_token: TOKEN });
+  if (!r || !r.success) { notify((r && r.error) || "Could not prepare your data"); return; }
+  const { success, ...data } = r;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  a.download = "digital-students-" + (SIN || "data") + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  notify("Your data was downloaded");
+}
+
+/* ============ Profile photo ============ */
+function readPhoto(file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { notify("Choose an image file."); return; }
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.onload = () => {
+    const n = 256, c = document.createElement("canvas"); c.width = c.height = n;
+    const s = Math.min(img.width, img.height), ctx = c.getContext("2d");
+    ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, n, n);
+    S.profile.photo = c.toDataURL("image/jpeg", .85);
+    URL.revokeObjectURL(url); chrome(); render(true);
+    persistProfile().then(ok => notify(ok ? "Photo updated" : "Photo preview saved, but syncing failed"));
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); notify("That image couldn't be read."); };
+  img.src = url;
+}
+async function persistProfile() {
+  const p = S.profile;
+  const r = await sbRpc("update_student_profile", {
+    p_token: TOKEN, p_full_name: p.full_name, p_phone: p.phone, p_email: p.email,
+    p_village: p.village, p_sub_county: p.sub_county, p_district: p.district,
+    p_guardian_name: p.guardian_name, p_guardian_relation: p.guardian_relation,
+    p_guardian_contact: p.guardian_contact, p_photo_url: p.photo
+  });
+  return !!(r && r.success);
+}
+
+/* ============ Click actions ============ */
+document.addEventListener("click", e => {
+  if (e.target === $("#scrim")) { closeModal(); return; }
+  const link = e.target.closest("a.nav-item,a.bn-item");
+  if (link) { e.preventDefault(); go(link.getAttribute("href").slice(1)); return; }
+  const el = e.target.closest("[data-act],[data-go]");
+  if (!el) return;
+  if (el.dataset.go) { closeModal(); go(el.dataset.go); return; }
+  const d = el.dataset;
+  switch (d.act) {
+    case "popup": openPopup(d.id); break;
+    case "menu": $("#sidebar").classList.add("open"); $("#sideScrim").classList.add("open"); break;
+    case "theme": S.theme = d.v; commit(); break;
+    case "set": S[d.k] = d.k === "text" ? +d.v : d.v; commit(); break;
+    case "toggle": setp(d.path, !getp(d.path)); commit(); notify("Preference saved"); break;
+    case "tab": tab = d.v; render(true); break;
+    case "copy":
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.val).then(() => notify("Student number copied"), () => notify("Copy isn't available here. Select the number instead."));
+      else notify("Copy isn't available here. Select the number instead.");
+      break;
+    case "edit-profile": editing = true; render(true); break;
+    case "cancel-profile": editing = false; render(true); break;
+    case "save-profile": {
+      const next = {};
+      $$("[data-pf]").forEach(i => { next[i.dataset.pf] = i.value.trim(); });
+      if (!next.full_name) { notify("Full name is required."); break; }
+      if (next.email && !/^\S+@\S+\.\S+$/.test(next.email)) { notify("Enter a valid email address."); break; }
+      Object.assign(S.profile, next); editing = false; chrome(); render(true);
+      persistProfile().then(ok => notify(ok ? "Profile saved" : "Could not save profile"));
+      break;
+    }
+    case "remove-photo": S.profile.photo = ""; chrome(); render(true); persistProfile().then(ok => notify(ok ? "Photo removed" : "Could not remove photo")); break;
+    case "mark-read": sbRpc("mark_student_notifications_read", { p_token: TOKEN }).then(async () => { await loadAll(); chrome(); refreshPops(); }); break;
+    case "revoke-auth": doRevokeAuth(d.id); break;
+    case "reset": askReset(); break;
+    case "palette": openPalette(); break;
+    case "pal": { const it = window._pal[+d.i]; closeModal(); if (it) it.run(); break; }
+    case "logout": modal("Log out?", "You'll need your student number and password to sign back in.", "", "Log out", () => {
+      sbRpc("revoke_student_session", { p_token: TOKEN }).finally(() => { setToken(""); location.reload(); });
+    }, true); break;
+    case "authorize": askSchool("Authorize a school", "The school will confirm this request before it takes effect.", "Send authorization", "access_grant", "Authorization request sent to"); break;
+    case "transfer": askSchool("Transfer to another school", "Your student number stays the same.", "Start transfer", "transfer_request", "Transfer started with"); break;
+    case "pw": askPassword(); break;
+    case "new-app": askNewApp(); break;
+    case "auth-tab": authMode = d.v; authErr = ""; pendingLogin = null; renderAuth(); break;
+    case "auth-signin": doSignIn(); break;
+    case "auth-signup": doSignUp(); break;
+    case "auth-forgot": doForgotPassword(); break;
+    case "auth-confirm-logout": doConfirmLogoutOthers(); break;
+    case "auth-cancel-confirm": cancelPendingLogin(); break;
+    case "signout-others": sbRpc("revoke_other_student_sessions", { p_token: TOKEN }).then(r => {
+      if (r && r.success) { notify(r.revoked ? "Logged out " + r.revoked + " other device" + (r.revoked > 1 ? "s" : "") : "No other devices were signed in"); SESSIONS = null; if (cur === "security") render(true); }
+      else notify((r && r.error) || "Could not log out other devices");
+    }); break;
+    case "revoke-session": sbRpc("revoke_student_session_by_id", { p_token: TOKEN, p_session_id: d.id }).then(r => {
+      if (r && r.success) { notify("Device logged out"); SESSIONS = null; if (cur === "security") render(true); }
+      else notify((r && r.error) || "Could not log out that device");
+    }); break;
+    case "2fa-on": ask2faSetup(); break;
+    case "2fa-off": ask2faOff(); break;
+    case "copy-2fa":
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.val).then(() => notify("Setup key copied"), () => notify("Copy isn't available here. Select the key instead."));
+      else notify("Copy isn't available here. Select the key instead.");
+      break;
+    case "download": doExport(); break;
+    case "auth-totp": doTotpSubmit(); break;
+    case "auth-forced": doForcedChange(); break;
+    case "auth-forced-cancel": cancelForcedChange(); break;
+    case "contact": notify("Support request opened"); break;
+    case "modal-ok": if (!modalOk || modalOk() !== false) closeModal(); break;
+    case "modal-close": closeModal(); break;
+  }
+});
+
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "recQ") $("#recBody").innerHTML = recRows(t.value);
+  else if (t.id === "textRange") { S.text = +t.value; apply(); $("#textVal").textContent = S.text + "%"; }
+  else if (t.id === "palQ") fillPalette(t.value);
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "textRange") { save(); }
+  else if (t.id === "photoInput") readPhoto(t.files[0]);
+  else if (t.dataset.sel) { S[t.dataset.sel] = t.value; commit(); }
+});
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openPalette(); return; }
+  if (e.key === "Escape") { closeModal(); closeSidebar(); return; }
+  if (e.key === "Enter" && e.target.closest("#authScreen")) {
+    e.preventDefault();
+    if (forcedChange) doForcedChange();
+    else if (pendingLogin) { if (pendingLogin.stage === "totp") doTotpSubmit(); else doConfirmLogoutOthers(); }
+    else if (authMode === "forgot") doForgotPassword();
+    else if (authMode === "signin") doSignIn();
+    else doSignUp();
+    return;
+  }
+  if (e.key === "Enter" && $("#scrim").classList.contains("open")) {
+    if (e.target.id === "palQ") { const it = (window._pal || [])[0]; if (it) { closeModal(); it.run(); } }
+    else if (modalOk && e.target.tagName === "INPUT" && e.target.type !== "checkbox") { if (modalOk() !== false) closeModal(); }
+  }
+});
+$("#sideScrim").addEventListener("click", closeSidebar);
+
+/* Keep the history entry in step with whatever overlay is showing */
+["click", "keydown", "change"].forEach(t => document.addEventListener(t, () => setTimeout(syncOverlay, 0)));
+
+/* ============ Boot ============ */
+if (history.state && history.state.overlay) history.replaceState(null, "");
+$$("[data-ic]").forEach(el => { el.innerHTML = ic(el.dataset.ic); });
+apply();
+boot();
+</script>
+</body>
+</html>
