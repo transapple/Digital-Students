@@ -1415,65 +1415,60 @@ apply();
 boot();
 
 // ---------- Installable PWA: service worker + install prompt ----------
-if ("serviceWorker" in navigator) {
-  const swSource = `
-    const SHELL_CACHE = "digital-students-shell-v1";
-    self.addEventListener("install", (e) => {
-      self.skipWaiting();
-    });
-    self.addEventListener("activate", (e) => {
-      self.clients.claim();
-      e.waitUntil(
-        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== SHELL_CACHE).map((k) => caches.delete(k))))
-      );
-    });
-    self.addEventListener("fetch", (e) => {
-      const req = e.request;
-      if (req.method !== "GET") return; // never intercept writes
-      let url;
-      try { url = new URL(req.url); } catch (err) { return; }
-      if (url.origin !== self.location.origin) return; // never touch cross-origin API calls
-      e.respondWith(
-        fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(SHELL_CACHE).then((cache) => cache.put(req, copy)).catch(() => {});
-          return res;
-        }).catch(() => caches.match(req))
-      );
-    });
-  `;
-  const swBlob = new Blob([swSource], { type: "application/javascript" });
-  const swUrl = URL.createObjectURL(swBlob);
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register(swUrl, { scope: "/" }).catch((err) => console.warn("SW registration failed:", err));
-  });
-}
 
 let __pwaDeferredPrompt = null;
+const __pwaBtn = () => document.getElementById("pwaInstallBtn");
+const __pwaInstalled = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+function __pwaToast(msg) {
+  let t = document.getElementById("pwaToast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "pwaToast";
+    t.style.cssText = "position:fixed;left:50%;bottom:84px;transform:translateX(-50%);max-width:88vw;background:#161A26;color:#fff;padding:12px 16px;border-radius:12px;font:600 13.5px/1.4 system-ui,sans-serif;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.3);text-align:center;";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.display = "none"; }, 8000);
+}
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   __pwaDeferredPrompt = e;
-  const btn = document.getElementById("pwaInstallBtn");
-  if (btn) btn.style.display = "flex";
+  const btn = __pwaBtn();
+  if (btn && !__pwaInstalled()) btn.style.display = "flex";
 });
 document.getElementById("pwaInstallBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("pwaInstallBtn");
+  const btn = __pwaBtn();
   if (__pwaDeferredPrompt) {
-    __pwaDeferredPrompt.prompt();
-    await __pwaDeferredPrompt.userChoice;
-    __pwaDeferredPrompt = null;
-    btn.style.display = "none";
+    const p = __pwaDeferredPrompt;
+    __pwaDeferredPrompt = null; // a prompt can only be used once
+    try {
+      p.prompt();
+      const choice = await p.userChoice;
+      if (choice && choice.outcome === "accepted") {
+        btn.style.display = "none";
+        __pwaToast("Installing… the app will appear on your home screen in a few seconds.");
+      } else {
+        __pwaToast("Install cancelled. To try again, open the browser menu and tap \u201cInstall app\u201d.");
+      }
+    } catch (err) {
+      __pwaToast("Couldn\u2019t start the install. Open the browser menu and tap \u201cInstall app\u201d or \u201cAdd to Home screen\u201d.");
+    }
   } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
     alert("To install: tap the Share icon, then \"Add to Home Screen\".");
+  } else {
+    __pwaToast("Open the browser menu (\u22ee) and tap \u201cInstall app\u201d or \u201cAdd to Home screen\u201d.");
   }
 });
 window.addEventListener("appinstalled", () => {
-  const btn = document.getElementById("pwaInstallBtn");
+  const btn = __pwaBtn();
   if (btn) btn.style.display = "none";
   __pwaDeferredPrompt = null;
+  __pwaToast("Installed! Find the app on your home screen.");
 });
-if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
-  const btn = document.getElementById("pwaInstallBtn");
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !__pwaInstalled()) {
+  const btn = __pwaBtn();
   if (btn) btn.style.display = "flex";
 }
 </script>
