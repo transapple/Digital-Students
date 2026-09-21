@@ -80,4 +80,4 @@ async function staticCacheFirst(event, req) {
   } catch (err) {
     return new Response('', { status: 504, statusText: 'Offline' });
   }
-                   }
+}
