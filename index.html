@@ -1022,15 +1022,14 @@ function trend(vals, labels) {
   </svg>`;
 }
 
-const PF = [["full_name", "Full name", null, null, true], ["dob", "Date of birth", "text", null, true], ["gender", "Gender", "text", null, true], ["phone", "Phone number", "tel"], ["email", "Email address", "email"], ["village", "Village", null, null, true], ["sub_county", "Sub-county", null, null, true], ["district", "District", null, null, true]];
+const PF = [["full_name", "Full name", null, null, true], ["dob", "Date of birth", "text", null, true], ["gender", "Gender", "text", null, true], ["phone", "Phone number", "tel"], ["email", "Email address", "email"], ["village", "Village"], ["sub_county", "Sub-county"], ["district", "District"]];
 const GF = [["guardian_name", "Guardian name", null, null, true], ["guardian_relation", "Relationship", null, null, true], ["guardian_contact", "Guardian phone", "tel", null, true]];
 function fld(f) {
   const [k, l, t, o, ro] = f, v = S.profile[k] || "";
-  if (true) return`<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div></div>`;
   if (ro && editing) return `<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div><small class="sm">Locked — tell your school to correct this.</small></div>`;
   if (!editing || ro) return `<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div></div>`;
   if (t === "select") return `<div class="field"><label for="pf-${k}">${l}</label><select class="input" id="pf-${k}" data-pf="${k}">${o.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select></div>`;
-  return `<div class="field"><label for="pf-${k}">${l}</label><input class="input" id="pf-${k}" data-pf="${k}" type="${t || "text"}" value="${esc(v)}"></div>`;
+  return `<div class="field"><label for="pf-${k}">${l}</label><input class="input" id="pf-${k}" data-pf="${k}" type="${t || "text"}" placeholder="Not set" value="${esc(v)}"${k === "phone" ? ' inputmode="tel"' : ""}></div>`;
 }
 
 const recRows = q => {
@@ -1090,7 +1089,7 @@ const SETTINGS = {
     <div class="panel"><div class="panel-head"><div><h2>Account</h2><p>Your sign-in and identity details.</p></div></div>
       ${setting("Sign in with", "Your student number or username, and password.", `<b class="mono">${SIN}${USERNAME ? " · " + esc(USERNAME) : ""}</b>`)}
       ${setting("Student number", "Permanent. It never changes, even if you move schools.", `<span style="display:flex;gap:10px;align-items:center"><b class="mono">${SIN}</b><button class="btn ghost sm" data-act="copy" data-val="${SIN}">${ic("copy")}Copy</button></span>`)}
-      ${setting("Profile", "Edit your name, photo and contact details.", `<button class="btn ghost sm" data-go="profile">${ic("edit")}Edit profile</button>`)}
+      ${setting("Profile", "Edit your phone, email, village, sub-county and district.", `<button class="btn ghost sm" data-act="settings-edit-profile">${ic("edit")}Edit profile</button>`)}
       ${setting("Password and security", "Change your password and manage sign-in protection.", `<button class="btn ghost sm" data-go="security">${ic("lock")}Security</button>`)}</div>
     <div class="panel"><div class="panel-head"><div><h2>Reset preferences</h2><p>Restores appearance, notifications and privacy to their defaults. Your profile and records stay as they are.</p></div><button class="btn danger sm" data-act="reset">${ic("reset")}Reset</button></div></div>
   </div>`
@@ -1136,7 +1135,7 @@ const PAGES = {
         
       </div></div>
       <div class="stack">
-        <div class="panel"><div class="panel-head"><div><h2>Personal information</h2><p>These details come from your school and are locked. If something is wrong, go to your school and tell them. The school will send the correction for review.</p></div></div><div class="fields">${PF.map(fld).join("")}</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Personal information</h2><p>You can edit your phone number, email, village, sub-county and district. Name, date of birth and gender come from your school and are locked. If they are wrong, tell your school.</p></div>${editing ? `<div style="display:flex;gap:8px"><button class="btn ghost sm" data-act="cancel-profile">Cancel</button><button class="btn sm" data-act="save-profile">Save</button></div>` : `<button class="btn ghost sm" data-act="edit-profile">${ic("edit")}Edit</button>`}</div><div class="fields">${PF.map(fld).join("")}</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Guardian</h2><p>Who we contact about your account.</p></div></div><div class="fields">${GF.map(fld).join("")}</div></div>
         <div class="panel"><div class="panel-head"><h2>Account</h2></div><div class="fields"><div class="field"><label>Signs in with</label><div class="val mono">${SIN}</div></div><div class="field"><label>Account status</label><div class="val">Verified</div></div></div></div>
       </div></div>` },
@@ -1336,8 +1335,9 @@ function go(p) {
 }
 window.addEventListener("hashchange", () => {
   if (ovOpen) { ovOpen = false; closeModal(); closeSidebar(); }
-  editing = false; render();
+  editing = pendingEdit && route() === "profile"; pendingEdit = false; render();
 });
+let pendingEdit = false;
 
 let ovOpen = false;
 const overlayVisible = () => $("#scrim").classList.contains("open") || $("#sidebar").classList.contains("open") || editing;
@@ -1542,17 +1542,21 @@ function readPhoto(file) {
     ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, n, n);
     S.profile.photo = c.toDataURL("image/jpeg", .85);
     URL.revokeObjectURL(url); chrome(); render(true);
-    persistProfile().then(ok => notify(ok ? "Photo updated" : "Photo preview saved, but syncing failed"));
+    persistProfile().then(r => notify(r.ok ? "Photo updated" : "Photo preview saved, but syncing failed"));
   };
   img.onerror = () => { URL.revokeObjectURL(url); notify("That image couldn't be read."); };
   img.src = url;
 }
 async function persistProfile() {
-  const p = S.profile;
-  const r = await sbRpc("update_student_contact_info", {
-    p_token: TOKEN, p_phone: p.phone, p_email: p.email, p_photo_url: p.photo
-  });
-  return !!(r && r.success);
+  const p = S.profile, base = { p_token: TOKEN, p_phone: p.phone, p_email: p.email, p_photo_url: p.photo };
+  let r = await sbRpc("update_student_contact_info", Object.assign({}, base, { p_village: p.village, p_sub_county: p.sub_county, p_district: p.district }));
+  if (r && r.success) return { ok: true };
+  // Older server function without the address fields: save what it supports.
+  if (r && /function|p_village|p_sub_county|p_district|schema cache/i.test(r.error || "")) {
+    r = await sbRpc("update_student_contact_info", base);
+    if (r && r.success) return { ok: true, partial: true };
+  }
+  return { ok: false, error: r && r.error };
 }
 
 document.addEventListener("click", e => {
@@ -1574,17 +1578,23 @@ document.addEventListener("click", e => {
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.val).then(() => notify("Copied"), () => notify("Copy isn't available here. Select the number instead."));
       else notify("Copy isn't available here. Select the number instead.");
       break;
-    case "edit-profile": break;
+    case "edit-profile": editing = true; render(true); break;
+    case "settings-edit-profile": pendingEdit = true; go("profile"); if (location.hash === "#profile") { pendingEdit = false; editing = true; render(true); } break;
     case "cancel-profile": editing = false; render(true); break;
     case "save-profile": {
       const next = {};
       $$("[data-pf]").forEach(i => { next[i.dataset.pf] = i.value.trim(); });
       if (next.email && !/^\S+@\S+\.\S+$/.test(next.email)) { notify("Enter a valid email address."); break; }
-      Object.assign(S.profile, next); editing = false; chrome(); render(true);
-      persistProfile().then(ok => notify(ok ? "Profile saved" : "Could not save profile"));
+      if (next.phone && !/^[0-9+\s-]{9,15}$/.test(next.phone)) { notify("Enter a valid phone number."); break; }
+      const before = Object.assign({}, S.profile);
+      Object.assign(S.profile, next); editing = false; chrome(); render(true); save();
+      persistProfile().then(r => {
+        if (r.ok) notify(r.partial ? "Phone and email saved. Village, sub-county and district need the server update." : "Profile saved");
+        else { Object.assign(S.profile, before); save(); chrome(); render(true); notify(r.error || "Could not save profile"); }
+      });
       break;
     }
-    case "remove-photo": S.profile.photo = ""; chrome(); render(true); persistProfile().then(ok => notify(ok ? "Photo removed" : "Could not remove photo")); break;
+    case "remove-photo": S.profile.photo = ""; chrome(); render(true); persistProfile().then(r => notify(r.ok ? "Photo removed" : "Could not remove photo")); break;
     case "mark-read": sbRpc("mark_student_notifications_read", { p_token: TOKEN }).then(async () => { await loadAll(); chrome(); refreshPops(); }); break;
     case "revoke-auth": doRevokeAuth(d.id); break;
     case "school-history": openSchoolHistory(d.id, d.name); break;
