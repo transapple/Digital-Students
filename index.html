@@ -69,7 +69,12 @@ body{margin:0;font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI"
 button,input,select{font:inherit;color:inherit}
 button{border:0;background:none;cursor:pointer;padding:0}
 a{color:inherit;text-decoration:none}
-:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+*{-webkit-tap-highlight-color:transparent}
+body{caret-color:transparent;-webkit-touch-callout:none}
+input,select,textarea{caret-color:auto;-webkit-touch-callout:default}
+:focus,:focus-visible{outline:none}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+#content:focus,#content:focus-visible{outline:none!important}
 h1{font-size:1.75rem;line-height:1.2;letter-spacing:-.02em;margin:0}
 h2{font-size:1.05rem;margin:0;line-height:1.3}
 p{margin:0;color:var(--muted)}
@@ -551,7 +556,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-const clean = v => String(v).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+const clean = v => String(v).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
 let SIN = "";
 let USERNAME = "";
 let CURRENT_SCHOOL = "";
@@ -562,8 +567,8 @@ const PW_HINT = "At least 8 characters, with an uppercase letter, a lowercase le
 const strongPw = pw => typeof pw === "string" && pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
 
 // (auth screen removed for development: the app opens straight on home; see boot())
-const SUPABASE_URL = "https://pjdtlpnlvumpefxjmjpv.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqZHRscG5sdnVtcGVmeGptanB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMDcyODgsImV4cCI6MjEwMzY4MzI4OH0.xzKpZhwPU1giusOJ5HLBrzUPbKMJw1yQCAmLgT0ABBQ";
+const SUPABASE_URL = "https://mwjmqodwrcxrohidonmj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13am1xb2R3cmN4cm9oaWRvbm1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODM4MjUsImV4cCI6MjEwNjg1OTgyNX0.Gq5vJCeCjJkA3dTGn06syj_zXlergkd3e-CrCm1e-zM";
 async function sbRpc(name, params = {}) {
   let res;
   try {
@@ -631,7 +636,12 @@ function termAverages() {
   return { labels: order, vals: order.map(t => Math.round(sums[t].total / sums[t].n)) };
 }
 
+let TRX = null, TRX_CODE = "";   // TRX: {active, expires_at, minutes, last_transfer_*}; TRX_CODE: the code, kept in memory only
+const TRX_DURATIONS = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360];
+const trxLabel = m => m < 60 ? m + " minutes" : (m % 60 === 0 ? (m / 60) + (m === 60 ? " hour" : " hours") : Math.floor(m / 60) + " hour" + (m >= 120 ? "s" : "") + " 30 minutes");
+async function loadTrx() { const r = await sbRpc("student_transfer_otp_state", { p_token: TOKEN }); TRX = r && r.success ? r : null; if (!(TRX && TRX.active)) TRX_CODE = ""; }
 async function loadAll() {
+  loadTrx();
   const [res, sch, note, app, auth, priv] = await Promise.all([
     sbRpc("list_student_exam_results", { p_token: TOKEN }),
     sbRpc("list_student_schools", { p_token: TOKEN }),
@@ -797,7 +807,7 @@ function authSignup(prefill) {
       <button class="auth-btn" id="aBtn" type="submit">Create account</button>
       <button class="auth-link" id="aBack" type="button">Back to log in</button>
     </form>`);
-  if (/^[A-Za-z0-9\s-]{10,14}$/.test(prefill || "") && clean(prefill).length === 10) $("#sSin").value = clean(prefill);
+  if (/^[A-Za-z0-9\s-]{12,16}$/.test(prefill || "") && clean(prefill).length === 12) $("#sSin").value = clean(prefill);
   ($("#sSin").value ? $("#sFirst") : $("#sSin")).focus();
   $("#aBack").onclick = () => authLogin();
   $("#authForm").onsubmit = async ev => {
@@ -821,7 +831,7 @@ function authSignup(prefill) {
 
 // "Forgot password?" sends a request to Mother; there is no self-service reset or sign-up.
 function authForgot(prefill) {
-  const looksSin = /^[A-Za-z0-9]{10}$/.test((prefill || "").replace(/[\s-]/g, ""));
+  const looksSin = /^S[FMfm][A-Za-z0-9]{10}$/.test((prefill || "").replace(/[\s-]/g, ""));
   authShell(`
     <p class="auth-sub">Tell Mother who you are and what you need. Your details are checked, then you get a temporary password and choose a new one when you log in.</p>
     <form id="authForm">
@@ -1016,7 +1026,8 @@ const PF = [["full_name", "Full name", null, null, true], ["dob", "Date of birth
 const GF = [["guardian_name", "Guardian name", null, null, true], ["guardian_relation", "Relationship", null, null, true], ["guardian_contact", "Guardian phone", "tel", null, true]];
 function fld(f) {
   const [k, l, t, o, ro] = f, v = S.profile[k] || "";
-  if (ro && editing) return `<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div><small class="sm">Locked — request a correction to change this.</small></div>`;
+  if (true) return`<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div></div>`;
+  if (ro && editing) return `<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div><small class="sm">Locked — tell your school to correct this.</small></div>`;
   if (!editing || ro) return `<div class="field"><label>${l}</label><div class="val">${v ? esc(v) : "Not set"}</div></div>`;
   if (t === "select") return `<div class="field"><label for="pf-${k}">${l}</label><select class="input" id="pf-${k}" data-pf="${k}">${o.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select></div>`;
   return `<div class="field"><label for="pf-${k}">${l}</label><input class="input" id="pf-${k}" data-pf="${k}" type="${t || "text"}" value="${esc(v)}"></div>`;
@@ -1116,17 +1127,16 @@ const PAGES = {
         <div class="panel"><div class="panel-head"><h2>Recent activity</h2></div>${NOTES.length ? NOTES.slice(0, 3).map(n => tlItem(n.title, n.body || "", relTime(n.created_at))).join("") : `<div class="empty">Nothing yet.</div>`}</div>
       </div></div>`; } },
 
-  profile: { t: "My profile", i: "user", r: () => head("My profile", "Your verified identity and personal details.",
-    editing ? `<button class="btn ghost" data-act="cancel-profile">Cancel</button><button class="btn" data-act="save-profile">${ic("check")}Save changes</button>` : `<button class="btn ghost" data-act="request-correction">${ic("edit")}Request correction</button><button class="btn" data-act="edit-profile">${ic("edit")}Edit contact info</button>`) + `
+  profile: { t: "My profile", i: "user", r: () => head("My profile", "Your verified identity and personal details.") + `
     <div class="grid cols-profile">
       <div class="stack"><div class="panel">
-        <div class="who"><div class="avatar-lg">${avatar()}<label title="Change photo">${ic("camera")}<input type="file" id="photoInput" accept="image/*" aria-label="Upload profile photo"></label></div>
+        <div class="who"><div class="avatar-lg">${avatar()}</div>
           <div><h2>${esc(full())}</h2><p class="sm">Student at ${esc(CURRENT_SCHOOL)}</p><span class="badge" style="margin-top:8px">${ic("check")}Verified</span></div></div>
         <div class="id-inline"><div><div class="sm">Student number</div><div class="mono">${SIN}</div></div><button class="btn soft sm" data-act="copy" data-val="${SIN}">${ic("copy")}Copy</button></div>
-        ${S.profile.photo ? `<button class="btn ghost sm" style="margin-top:12px" data-act="remove-photo">Remove photo</button>` : ""}
+        
       </div></div>
       <div class="stack">
-        <div class="panel"><div class="panel-head"><h2>Personal information</h2></div><div class="fields">${PF.map(fld).join("")}</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Personal information</h2><p>These details come from your school and are locked. If something is wrong, go to your school and tell them. The school will send the correction for review.</p></div></div><div class="fields">${PF.map(fld).join("")}</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Guardian</h2><p>Who we contact about your account.</p></div></div><div class="fields">${GF.map(fld).join("")}</div></div>
         <div class="panel"><div class="panel-head"><h2>Account</h2></div><div class="fields"><div class="field"><label>Signs in with</label><div class="val mono">${SIN}</div></div><div class="field"><label>Account status</label><div class="val">Verified</div></div></div></div>
       </div></div>` },
@@ -1160,16 +1170,34 @@ const PAGES = {
     ${P.transfer_windows.length ? `<div class="panel" style="margin-top:var(--gap)"><div class="panel-head"><div><h2>Open transfer windows</h2><p>Older transfer windows still open from before. They close on their own.</p></div></div>${P.transfer_windows.map(w => `<div class="setting"><div><b>${esc(w.school_name)}</b><small>Closes ${esc(fmtDate(new Date(w.closes_at)))}</small></div></div>`).join("")}</div>` : ""}`;
   } },
 
-  transfer: { t: "School transfer", i: "transfer", r: () => head("School transfer", "Find a school, see who they are, and ask to move. Your student number stays the same.") + `
-    <div class="panel" style="margin-bottom:var(--gap)">
-      <h2 style="margin-bottom:8px">Find a school</h2>
-      <p class="sm" style="margin-bottom:14px">Search by school name, village, sub-county or district.</p>
-      <div class="field"><input class="input" id="schoolBrowseQ" placeholder="e.g. a school name, or Butiaba, Masindi…" autocomplete="off" value="${esc(SCHOOL_BROWSE_Q)}"></div>
-      <div id="schoolBrowseResults">${schoolBrowseResultsHTML()}</div>
-    </div>
-    <div class="grid cols-2"><div class="panel"><h2 style="margin-bottom:8px">Already know a school?</h2><p class="sm" style="margin-bottom:18px">Give them access to your SIN directly instead of requesting a transfer.</p><button class="btn ghost" data-act="authorize">${ic("plus")}Give a school access</button></div>
-    <div class="panel"><h2 style="margin-bottom:14px">Your permanent number</h2><div class="id-inline"><div><div class="sm">Student number</div><div class="mono">${SIN}</div></div><span class="badge">${ic("check")}Verified</span></div><p class="sm" style="margin-top:12px">This does not change when you transfer.</p></div></div>
-    ${transferRequestsHTML()}` },
+  transfer: { t: "School transfer", i: "transfer", r: () => {
+    const T = TRX || { active: false };
+    const until = T.expires_at ? new Date(T.expires_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+    const opts = TRX_DURATIONS.map(m => `<option value="${m}" ${m === 60 ? "selected" : ""}>${trxLabel(m)}</option>`).join("");
+    const body = T.active && TRX_CODE ? `
+      <div class="panel" style="text-align:center">
+        <p class="sm" style="margin-bottom:6px">Your transfer code</p>
+        <div class="mono" style="font-size:2.2rem;font-weight:800;letter-spacing:.35em;padding-left:.35em;margin:6px 0">${esc(TRX_CODE)}</div>
+        <p class="sm">Valid until ${esc(until)} (${esc(trxLabel(T.minutes || 60))}). It works once.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+          <button class="btn soft" data-act="copy" data-val="${esc(TRX_CODE)}">${ic("copy")}Copy code</button>
+          <button class="btn ghost" data-act="trx-cancel">Cancel transfer</button></div>
+        <p class="sm" style="margin-top:14px">Give the new school two things: your student number <b class="mono">${esc(SIN)}</b> and this code.</p>
+      </div>` : T.active ? `
+      <div class="panel"><h2 style="margin-bottom:8px">A transfer is open</h2>
+        <p class="sm" style="margin-bottom:14px">Your code is valid until ${esc(until)}. For your safety the code is only shown once. If you lost it, cancel and create a new one.</p>
+        <button class="btn ghost" data-act="trx-cancel">Cancel transfer</button></div>` : `
+      <div class="panel"><h2 style="margin-bottom:8px">Open a transfer</h2>
+        <p class="sm" style="margin-bottom:14px">Create a one-time code for the new school. Nobody can move your record without it.</p>
+        <div class="field"><label for="trxMin">How long should the code stay valid?</label><select class="input" id="trxMin">${opts}</select></div>
+        <button class="btn" data-act="trx-generate">${ic("transfer")}Generate transfer code</button></div>`;
+    return head("School transfer", "Move to a new school safely. Your student number stays the same.") + body + `
+    <div class="grid cols-2" style="margin-top:var(--gap)">
+      <div class="panel"><h2 style="margin-bottom:8px">How it works</h2>
+        <p class="sm">1. Choose how long the code is valid and generate it.<br>2. Take your student number and the code to the new school.<br>3. The school enters both. If they are correct and in time, your whole record moves.<br>4. Your record at the old school becomes inactive: the old school can still read your history, but can no longer record or change anything for you.</p></div>
+      <div class="panel"><h2 style="margin-bottom:14px">Your permanent number</h2><div class="id-inline"><div><div class="sm">Student number</div><div class="mono">${SIN}</div></div><span class="badge">${ic("check")}Verified</span></div>
+        ${T.last_transfer_school ? `<p class="sm" style="margin-top:12px">Last transfer: ${esc(T.last_transfer_school)}, ${esc(fmtDate(new Date(T.last_transfer_at)))}.</p>` : ""}</div></div>`;
+  } },
 
   security: { t: "Security", i: "lock", r: () => head("Security", "Protect your Digital Students account.") + `
     <div class="grid cols-2">
@@ -1189,7 +1217,7 @@ const PAGES = {
     <div class="grid cols-main"><div class="panel faq"><div class="panel-head"><h2>Frequently asked</h2></div>
       <details><summary>What is my student number?</summary><p>It is your permanent identity across every school. It is ${SIN} and does not change when you transfer.</p></details>
       <details><summary>How do I let a new school see my records?</summary><p>Open Data authorization, choose Authorize school, and pick the records to share. You can revoke access at any time.</p></details>
-      <details><summary>How do I correct a mistake in my details?</summary><p>Submit a Personal information correction from Applications. A school administrator reviews it.</p></details>
+      <details><summary>How do I correct a mistake in my details?</summary><p>You cannot send a correction from this app. Go to your school and tell them what is wrong. The school sends the correction request, and it is reviewed before anything changes.</p></details>
       <details><summary>How do I change the theme or turn on dark mode?</summary><p>Open Settings, choose Appearance, then pick light, dark or a theme color. You can also change the navigation layout there.</p></details></div>
     <div class="panel"><h2 style="margin-bottom:8px">Still need help?</h2><p class="sm" style="margin-bottom:16px">Send a message to the support team and include your student number.</p><button class="btn" data-act="contact">Contact support</button></div></div>` }
 };
@@ -1441,9 +1469,7 @@ async function openSchoolProfile(schoolId) {
     ${section("Subjects", (r.subjects || []).length ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${r.subjects.map(sj => `<span class="badge">${esc(sj)}</span>`).join("")}</div>` : `<div class="empty">No subjects recorded yet.</div>`)}`;
   if (footEl) footEl.innerHTML = r.is_current_school
     ? `<button class="btn ghost" data-act="modal-close">Close</button><span class="badge">Your current school</span>`
-    : r.has_pending_transfer_request
-    ? `<button class="btn ghost" data-act="modal-close">Close</button><span class="badge pending">Request pending</span>`
-    : `<button class="btn ghost" data-act="modal-close">Close</button><button class="btn" data-act="do-transfer" data-id="${esc(s.id)}" data-code="${esc(s.school_code)}" data-name="${esc(s.name)}">${ic("transfer")}Request transfer</button>`;
+    : `<button class="btn ghost" data-act="modal-close">Close</button>`;
 }
 function askTransferSchool(schoolCode, schoolName) {
   modal(`Transfer to ${esc(schoolName)}?`, "The school will review your request and decide whether to accept you. Your student number stays the same either way.",
@@ -1479,31 +1505,6 @@ function askNewApp() {
         if (r && r.success) { notify("Application submitted"); await loadAll(); render(true); }
         else notify((r && r.error) || "Could not submit application");
       });
-  });
-}
-const CORRECTION_FIELDS = [
-  ["full_name", "Full name"], ["dob", "Date of birth", "date"], ["gender", "Gender", "gender"],
-  ["village", "Village"], ["sub_county", "Sub-county"], ["district", "District"],
-  ["guardian_name", "Guardian name"], ["guardian_relation", "Relationship"], ["guardian_contact", "Guardian phone"]
-];
-const CORRECTION_KEY = { dob: "date_of_birth" }; // profile field name -> student_identities column
-function askCorrection() {
-  const inputs = CORRECTION_FIELDS.map(([k, label, type]) => {
-    const v = S.profile[k] || "";
-    if (type === "gender") return `<div class="field"><label>${label}</label><select id="c_${k}">${["Male", "Female"].map(g => `<option ${v === g ? "selected" : ""}>${g}</option>`).join("")}</select></div>`;
-    return `<div class="field"><label>${label}</label><input id="c_${k}" type="${type || "text"}" value="${esc(v)}"></div>`;
-  }).join("");
-  modal("Request correction", `<p class="sm" style="margin-bottom:10px">Change only what is wrong. Mother reviews the request; nothing changes until it's approved. Only one request can be open at a time.</p>${inputs}<div class="field"><label for="c_reason">Why is this correction needed?</label><input class="input" id="c_reason"></div>`, "Send to Mother", () => {
-    const changes = {};
-    CORRECTION_FIELDS.forEach(([k]) => {
-      const now = ($("#c_" + k).value || "").trim(), col = CORRECTION_KEY[k] || k;
-      if (now !== String(S.profile[k] || "").trim()) changes[col] = now || null;
-    });
-    const reason = $("#c_reason").value.trim();
-    if (!Object.keys(changes).length) { notify("Change at least one detail first."); return false; }
-    if (!reason) { notify("Give a reason for the correction."); return false; }
-    sbRpc("student_submit_correction", { p_token: TOKEN, p_changes: changes, p_reason: reason })
-      .then(r => { if (r && r.success) notify("Correction " + (r.ref || "") + " sent to Mother"); else notify((r && r.error) || "Could not submit correction"); });
   });
 }
 function askReset() {
@@ -1603,10 +1604,10 @@ document.addEventListener("click", e => {
     case "toggle": setp(d.path, !getp(d.path)); commit(); notify("Preference saved"); break;
     case "tab": tab = d.v; render(true); break;
     case "copy":
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.val).then(() => notify("Student number copied"), () => notify("Copy isn't available here. Select the number instead."));
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.val).then(() => notify("Copied"), () => notify("Copy isn't available here. Select the number instead."));
       else notify("Copy isn't available here. Select the number instead.");
       break;
-    case "edit-profile": editing = true; render(true); break;
+    case "edit-profile": break;
     case "cancel-profile": editing = false; render(true); break;
     case "save-profile": {
       const next = {};
@@ -1627,12 +1628,22 @@ document.addEventListener("click", e => {
       sbRpc("revoke_student_session", { p_token: TOKEN }).finally(() => { setToken(""); clearPersonalCache(); location.reload(); });
     }, true); break;
     case "authorize": askGrantSchool(); break;
+    case "trx-generate": {
+      const mins = Number(($("#trxMin") || {}).value || 60);
+      sbRpc("student_generate_transfer_otp", { p_token: TOKEN, p_minutes: mins }).then(async r => {
+        if (r && r.success) { TRX_CODE = r.otp; await loadTrx(); render(true); notify("Transfer code created"); }
+        else notify((r && r.error) || "Could not create the code");
+      }); break; }
+    case "trx-cancel":
+      sbRpc("student_cancel_transfer_otp", { p_token: TOKEN }).then(async r => {
+        if (r && r.success) { TRX_CODE = ""; await loadTrx(); render(true); notify("Transfer cancelled"); }
+        else notify((r && r.error) || "Could not cancel");
+      }); break;
     case "view-school": openSchoolProfile(d.id); break;
     case "do-transfer": closeModal(); askTransferSchool(d.code, d.name); break;
     case "self-lock": askSelfLock(d.lock === "1"); break;
     case "pw": askPassword(); break;
     case "new-app": askNewApp(); break;
-    case "request-correction": askCorrection(); break;
     case "signout-others": sbRpc("revoke_other_student_sessions", { p_token: TOKEN }).then(r => {
       if (r && r.success) { notify(r.revoked ? "Logged out " + r.revoked + " other device" + (r.revoked > 1 ? "s" : "") : "No other devices were signed in"); SESSIONS = null; if (cur === "security") render(true); }
       else notify((r && r.error) || "Could not log out other devices");
@@ -1664,7 +1675,7 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => {
   const t = e.target;
   if (t.id === "textRange") { save(); }
-  else if (t.id === "photoInput") readPhoto(t.files[0]);
+  
   else if (t.dataset.sel) { S[t.dataset.sel] = t.value; commit(); }
 });
 document.addEventListener("keydown", e => {
