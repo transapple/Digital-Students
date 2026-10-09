@@ -1081,7 +1081,7 @@ const SETTINGS = {
   privacy: () => `<div class="stack">
     <div class="panel"><div class="panel-head"><div><h2>Privacy</h2><p>Control what schools and others can see.</p></div></div>
       ${setting("Share attendance with authorized schools", "Attendance is included when you authorize a school.", sw("privacy.attendance", "Share attendance"))}
-      ${setting("School access and SIN lock", PRIVACY && PRIVACY.self_locked ? "Your SIN is locked. Only schools you gave access can open it." : "Your SIN is closed to schools unless you give access or a school you request to transfer to approves you.", `<button class="btn ghost sm" data-go="access">Manage</button>`)}
+      ${setting("SIN lock", PRIVACY && PRIVACY.self_locked ? "Your SIN is locked." : "Your SIN is closed to schools unless a school you request to transfer to approves you.", `<button class="btn ghost sm" data-go="security">Manage</button>`)}
       ${setting("Download my data", "Get a copy of your records and profile.", `<button class="btn ghost sm" data-act="download">${ic("download")}Download</button>`)}</div>
     <div class="panel"><div class="panel-head"><div><h2>Region</h2><p>How dates are shown across the app.</p></div></div>
       ${setting("Date format", "Example: " + fmtDate(new Date("2026-09-19T12:00:00")), `<select class="input" style="width:190px" data-sel="dateFmt" aria-label="Date format"><option value="long" ${S.dateFmt === "long" ? "selected" : ""}>Sep 19, 2026</option><option value="dmy" ${S.dateFmt === "dmy" ? "selected" : ""}>19 Sep 2026</option><option value="iso" ${S.dateFmt === "iso" ? "selected" : ""}>2026-09-19</option></select>`)}</div>
@@ -1117,7 +1117,7 @@ const PAGES = {
     const pendingApps = APPS_LIST.filter(a => a.status === "pending").length;
     const { labels, vals } = termAverages();
     return `
-    <div class="page-head"><div><h1>${greet()}, ${esc((S.profile.full_name || "Student").split(" ")[0])}</h1><p>Your records, results and school access in one place.</p></div><div class="chip">${ic("calendar")}${fmtDate(new Date())}</div></div>
+    <div class="page-head"><div><h1>${greet()}, ${esc((S.profile.full_name || "Student").split(" ")[0])}</h1><p>Your records, results and security in one place.</p></div><div class="chip">${ic("calendar")}${fmtDate(new Date())}</div></div>
     <div class="grid cols-hero">${idCard()}
       <div class="stats">${stat("star", "Average score", avg === null ? "—" : avg + "%", avg === null ? "No results yet" : "Across " + rows.length + " recorded results")}${stat("book", "Subjects", String(subjects), "With at least one result")}${stat("shield", "Active authorizations", String(AUTHS_LIST.filter(a => a.status === "approved").length), "Schools with data access")}${stat("file", "Pending applications", String(pendingApps), "Awaiting a decision")}</div></div>
     <div class="grid cols-main" style="margin-top:var(--gap)">
@@ -1160,16 +1160,6 @@ const PAGES = {
   schools: { t: "School history", i: "school", r: () => head("School history", "Schools connected to your student identity.") + `
     <div class="panel">${SCHOOLS_LIST.length ? SCHOOLS_LIST.map(s => `<div class="row" style="cursor:pointer" data-act="school-history" data-id="${esc(s.school_id)}" data-name="${esc(s.school_name)}"><div class="row-ico">${esc((s.school_name || "?").slice(0, 2).toUpperCase())}</div><div class="row-main"><b>${esc(s.school_name)}</b><small>${s.admission_date ? "Since " + esc(fmtDate(new Date(s.admission_date))) : ""}</small></div><span class="badge ${s.status === "active" ? "" : "off"}">${esc(s.status === "active" ? "Current" : "Past")}</span></div>`).join("") : `<div class="empty">No schools are linked to your student identity yet.</div>`}</div>` },
 
-  access: { t: "School access", i: "shield", r: () => {
-    const P = PRIVACY || { self_locked: false, grants: [], transfer_windows: [] };
-    const grantRow = g => `<div class="setting"><div><b>${esc(g.school_name)}</b><small>Given ${g.granted_by === "mother" ? "by Mother" : "by you"} · ${esc(fmtDate(new Date(g.granted_at)))}</small></div><button class="btn ghost sm" data-act="revoke-auth" data-id="${g.id}">Revoke</button></div>`;
-    return head("School access", "Your SIN is closed to every school except the ones you choose.", `<button class="btn" data-act="authorize">${ic("plus")}Give a school access</button>`) + `
-    <div class="panel" style="margin-bottom:var(--gap)"><div class="panel-head"><div><h2>Lock my SIN</h2><p>An extra safeguard on top of the schools you've approved.</p></div></div>
-      ${setting("Self-lock", P.self_locked ? "Locked. Schools you gave access to can still open it until you revoke them." : "Unlocked. You can still lock it any time for extra safety.", `<button class="btn ${P.self_locked ? "ghost" : "danger"} sm" data-act="self-lock" data-lock="${P.self_locked ? 0 : 1}">${P.self_locked ? "Unlock" : "Lock my SIN"}</button>`)}</div>
-    <div class="panel"><div class="panel-head"><h2>Schools with access</h2></div>${P.grants.length ? P.grants.map(grantRow).join("") : `<div class="empty">No school has been given access yet.</div>`}</div>
-    ${P.transfer_windows.length ? `<div class="panel" style="margin-top:var(--gap)"><div class="panel-head"><div><h2>Open transfer windows</h2><p>Older transfer windows still open from before. They close on their own.</p></div></div>${P.transfer_windows.map(w => `<div class="setting"><div><b>${esc(w.school_name)}</b><small>Closes ${esc(fmtDate(new Date(w.closes_at)))}</small></div></div>`).join("")}</div>` : ""}`;
-  } },
-
   transfer: { t: "School transfer", i: "transfer", r: () => {
     const T = TRX || { active: false };
     const until = T.expires_at ? new Date(T.expires_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
@@ -1204,7 +1194,9 @@ const PAGES = {
       <div class="panel"><div class="panel-head"><h2>Where you're signed in</h2></div>${sessionsHTML()}<button class="btn danger" style="margin-top:14px" data-act="signout-others" ${SESSIONS && SESSIONS.length > 1 ? "" : "disabled"}>Log out all other devices</button></div>
       <div class="panel"><div class="panel-head"><h2>Sign-in protection</h2></div>
         ${setting("Password", "Used with your student number to sign in.", `<button class="btn ghost sm" data-act="pw">Change</button>`)}
-        ${setting("Two-step verification", TWO_STEP ? "On. Signing in needs a code from your authenticator app." : "Ask for a code from an authenticator app when you sign in.", TWO_STEP ? `<button class="btn ghost sm" data-act="2fa-off">Turn off</button>` : `<button class="btn ghost sm" data-act="2fa-on">Set up</button>`)}</div></div>` },
+        ${setting("Two-step verification", TWO_STEP ? "On. Signing in needs a code from your authenticator app." : "Ask for a code from an authenticator app when you sign in.", TWO_STEP ? `<button class="btn ghost sm" data-act="2fa-off">Turn off</button>` : `<button class="btn ghost sm" data-act="2fa-on">Set up</button>`)}</div></div>
+    <div class="panel" style="margin-top:var(--gap)"><div class="panel-head"><div><h2>Lock my SIN</h2><p>Lock your SIN to keep it closed. Unlock it whenever you need to.</p></div></div>
+      ${setting("SIN lock", PRIVACY && PRIVACY.self_locked ? "Locked. Your SIN is closed." : "Unlocked. You can lock it any time for extra safety.", `<button class="btn ${PRIVACY && PRIVACY.self_locked ? "ghost" : "danger"} sm" data-act="self-lock" data-lock="${PRIVACY && PRIVACY.self_locked ? 0 : 1}">${PRIVACY && PRIVACY.self_locked ? "Unlock" : "Lock my SIN"}</button>`)}</div>` },
 
   applications: { t: "Applications", i: "file", r: () => head("Applications", "Track requests submitted for you.", `<button class="btn" data-act="new-app">${ic("plus")}New application</button>`) + `
     <div class="panel"><div class="table-wrap"><table><thead><tr><th>Application</th><th>School</th><th>Date</th><th>Status</th></tr></thead><tbody>${APPS_LIST.length ? APPS_LIST.map(a => `<tr><td><b>${esc(APP_KIND_LABEL[a.kind] || a.kind)}</b>${a.notes ? `<div class="sm">${esc(a.notes)}</div>` : ""}</td><td>${esc(a.school_name || "—")}</td><td>${esc(fmtDate(new Date(a.submitted_at)))}</td><td><span class="badge ${a.status === "approved" ? "" : a.status === "rejected" ? "off" : "pending"}">${esc(a.status[0].toUpperCase() + a.status.slice(1))}</span></td></tr>`).join("") : `<tr><td colspan="4"><div class="empty">No applications submitted yet.</div></td></tr>`}</tbody></table></div></div>` },
@@ -1221,7 +1213,7 @@ const PAGES = {
       <details><summary>How do I change the theme or turn on dark mode?</summary><p>Open Settings, choose Appearance, then pick light, dark or a theme color. You can also change the navigation layout there.</p></details></div>
     <div class="panel"><h2 style="margin-bottom:8px">Still need help?</h2><p class="sm" style="margin-bottom:16px">Send a message to the support team and include your student number.</p><button class="btn" data-act="contact">Contact support</button></div></div>` }
 };
-const GROUPS = [["Overview", ["dashboard"]], ["My records", ["profile", "academics", "results", "schools"]], ["Access", ["access", "transfer", "applications"]], ["Account", ["security", "settings"]]];
+const GROUPS = [["Overview", ["dashboard"]], ["My records", ["profile", "academics", "results", "schools"]], ["Access", ["transfer", "applications"]], ["Account", ["security", "settings"]]];
 let toastTimer;
 function notify(msg) {
   const t = $("#toast");
@@ -1275,7 +1267,7 @@ async function openSchoolHistory(schoolId, schoolName) {
 
 const NAV_BOTTOM = ["dashboard", "academics", "results", "profile"];
 const BN_LABEL = { dashboard: "Home", academics: "Records", results: "Results", profile: "Profile" };
-const MORE_IDS = ["schools", "access", "transfer", "applications", "security", "settings", "help"];
+const MORE_IDS = ["schools", "transfer", "applications", "security", "settings", "help"];
 const POPS = {
   popNotif: () => `<div class="modal-head"><h2>Notifications</h2><button class="btn soft sm" data-act="mark-read">Mark all read</button></div>
     ${NOTES.length ? NOTES.map(n => `<div class="note">${n.is_read ? "" : '<i class="tl-dot"></i>'}<div><b>${esc(n.title)}</b><small>${esc(n.body || "")}</small><small>${esc(relTime(n.created_at))}</small></div></div>`).join("") : `<div class="empty">No notifications yet.</div>`}`,
@@ -1399,31 +1391,6 @@ function askPassword() {
       .then(r => notify(r && r.success ? "Password updated" : ((r && r.error) || "Could not update password")));
   });
 }
-function askGrantSchool() {
-  let schoolMap = {}, timer;
-  modal("Give a school access", "The school can read your SIN record straight away. You can revoke it any time.", `<div class="field"><label for="m1">School name</label><input class="input" id="m1" list="schoolList" autocomplete="off"><datalist id="schoolList"></datalist></div>`, "Give access", () => {
-    const v = $("#m1").value.trim();
-    if (!v) { notify("Enter a school name."); return false; }
-    if (!schoolMap[v]) { notify("Pick your school from the suggestions."); return false; }
-    sbRpc("student_grant_school_access", { p_token: TOKEN, p_school_id: schoolMap[v] })
-      .then(async r => {
-        if (r && r.success) { notify("Access given to " + (r.school_name || v)); await loadAll(); render(true); }
-        else notify((r && r.error) || "Could not give access");
-      });
-  });
-  const inp = $("#m1");
-  if (inp) inp.addEventListener("input", () => {
-    clearTimeout(timer);
-    const q = inp.value.trim();
-    if (q.length < 3) return;
-    timer = setTimeout(async () => {
-      const r = await sbRpc("search_schools_for_student", { p_token: TOKEN, p_query: q });
-      if (!(r && r.success && Array.isArray(r.schools))) return;
-      schoolMap = {};
-      $("#schoolList").innerHTML = r.schools.map(x => { const lb = x.name + (x.district ? " (" + x.district + ")" : ""); schoolMap[lb] = x.id; return `<option value="${esc(lb)}"></option>`; }).join("");
-    }, 250);
-  });
-}
 function transferRequestsHTML() {
   const reqs = AUTHS_LIST.filter(a => a.kind === "transfer_request");
   if (!reqs.length) return "";
@@ -1484,7 +1451,7 @@ function askTransferSchool(schoolCode, schoolName) {
 }
 function askSelfLock(lock) {
   modal(lock ? "Lock your SIN?" : "Unlock your SIN?",
-    lock ? "This is an extra safeguard on top of the schools you've approved. Schools you already gave access to keep it until you revoke them."
+    lock ? "Your SIN will stay closed until you unlock it."
          : "You can lock it again at any time for extra safety.",
     "", lock ? "Lock my SIN" : "Unlock", () => {
     sbRpc("student_set_self_lock", { p_token: TOKEN, p_locked: !!lock }).then(async r => {
@@ -1627,7 +1594,6 @@ document.addEventListener("click", e => {
     case "logout": modal("Log out?", "You'll need your student number and password to sign back in.", "", "Log out", () => {
       sbRpc("revoke_student_session", { p_token: TOKEN }).finally(() => { setToken(""); clearPersonalCache(); location.reload(); });
     }, true); break;
-    case "authorize": askGrantSchool(); break;
     case "trx-generate": {
       const mins = Number(($("#trxMin") || {}).value || 60);
       sbRpc("student_generate_transfer_otp", { p_token: TOKEN, p_minutes: mins }).then(async r => {
